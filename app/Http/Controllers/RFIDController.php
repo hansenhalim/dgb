@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreRFIDRequest;
 use App\Http\Requests\UpdateRFIDRequest;
 use App\Models\RFID;
+use Illuminate\Http\JsonResponse;
 
 class RFIDController extends Controller
 {
@@ -62,5 +63,10 @@ class RFIDController extends Controller
     public function destroy(RFID $rFID)
     {
         //
+    }
+
+    public function lookupUID(): JsonResponse
+    {
+        return response()->json('yes');
     }
 }
