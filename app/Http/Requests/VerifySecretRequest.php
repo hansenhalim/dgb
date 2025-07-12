@@ -14,8 +14,9 @@ class VerifySecretRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'uid' => ['required', 'string', 'size:8', 'regex:/^[a-fA-F0-9]+/'],
-            'secret_key' => ['required'],
+            'uid' => ['required', 'string', 'size:8', 'regex:/^[A-F0-9]+$/'],
+            'secret_key' => ['required', 'string', 'size:1024', 'regex:/^[A-F0-9]+$/'],
+            'device_name' => ['required', 'string'],
         ];
     }
 
@@ -23,6 +24,7 @@ class VerifySecretRequest extends FormRequest
     {
         return [
             'uid.regex' => 'UID must be a valid 8-character hexadecimal string.',
+            'secret_key.regex' => 'Secret Key must be a valid 1024-character hexadecimal string.',
         ];
     }
 }

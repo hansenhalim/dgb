@@ -11,3 +11,5 @@ Route::get('/user', function (Request $request) {
 Route::post('/auth/lookup-uid', [RFIDController::class, 'lookupUID']);
 Route::post('/auth/verify-pin', [RFIDController::class, 'verifyPIN']);
 Route::post('/auth/verify-secret', [RFIDController::class, 'verifySecret']);
+
+Route::get('/rfid-key', [RFIDController::class, 'getKey']);

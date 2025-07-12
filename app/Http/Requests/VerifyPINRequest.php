@@ -14,7 +14,7 @@ class VerifyPINRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'uid' => ['required', 'string', 'size:8', 'regex:/^[a-fA-F0-9]+/'],
+            'uid' => ['required', 'string', 'size:8', 'regex:/^[A-F0-9]+$/'],
             'pin' => ['required', 'digits:6'],
         ];
     }
