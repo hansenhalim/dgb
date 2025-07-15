@@ -15,8 +15,7 @@ return new class extends Migration {
             $table->binary('uid', 4, true)->unique();
             $table->binary('key', 96, true);
             $table->string('pin')->nullable();
-            $table->uuid('rfidable_id')->nullable();
-            $table->string('rfidable_type')->nullable();
+            $table->nullableUuidMorphs('rfidable');
             $table->timestamps();
 
             $table->primary('id');

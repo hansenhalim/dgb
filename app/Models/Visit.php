@@ -3,13 +3,12 @@
 namespace App\Models;
 
 use App\Enum\CurrentPosition;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class Visit extends Model
 {
-    /** @use HasFactory<\Database\Factories\VisitFactory> */
-    use HasFactory;
+    use HasUuids;
 
     protected function casts(): array
     {

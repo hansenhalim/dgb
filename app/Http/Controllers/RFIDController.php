@@ -10,6 +10,7 @@ use App\Http\Requests\VerifySecretRequest;
 use App\Models\RFID;
 use App\Models\Staff;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -102,7 +103,16 @@ class RFIDController extends Controller
 
         return response()->json([
             'message' => 'You have logged in successfully.',
-            'token' => $token
+            'token' => $token,
+        ]);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'You have been logged out successfully.',
         ]);
     }
 
