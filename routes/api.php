@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\GateController;
 use App\Http\Controllers\RFIDController;
+use App\Http\Controllers\TransferRequestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -15,4 +17,7 @@ Route::post('/auth/verify-secret', [RFIDController::class, 'verifySecret']);
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/auth/logout', [RFIDController::class, 'logout']);
     Route::get('/rfid-key', [RFIDController::class, 'getKey']);
+    Route::get('/gates', [GateController::class, 'index']);
+    Route::get('/gates/{gate}/transfer-requests', [TransferRequestController::class, 'index']);
+    Route::patch('/transfer-requests/{transferRequest}', [TransferRequestController::class, 'respond']);
 });

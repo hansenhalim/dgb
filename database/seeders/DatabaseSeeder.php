@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enum\Role;
+use App\Models\Gate;
 use App\Models\RFID;
 use App\Models\Staff;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -44,19 +45,43 @@ class DatabaseSeeder extends Seeder
 
         $staff->rfids()->save($rfid);
 
-        $rfid = RFID::create([
+        RFID::create([
             'uid' => DB::raw("decode('" . 'DEADC0DE' . "', 'hex')"),
             'key' => DB::raw("decode('" . str_repeat('C0FFEEC0FFEE', 16) . "', 'hex')"),
         ]);
 
-        $rfid = RFID::create([
+        RFID::create([
             'uid' => DB::raw("decode('" . 'B16B00B5' . "', 'hex')"),
             'key' => DB::raw("decode('" . str_repeat('C0FFEEC0FFEE', 16) . "', 'hex')"),
         ]);
 
-        $rfid = RFID::create([
+        RFID::create([
             'uid' => DB::raw("decode('" . 'DEADF00D' . "', 'hex')"),
             'key' => DB::raw("decode('" . str_repeat('C0FFEEC0FFEE', 16) . "', 'hex')"),
+        ]);
+
+        Gate::create([
+            'name' => 'Gerbang 1',
+            'current_quota' => 300,
+            'proximity_id' => '019813a4-cbd1-7add-a4b8-dc56fb1006b9'
+        ]);
+
+        Gate::create([
+            'name' => 'Gerbang 2',
+            'current_quota' => 150,
+            'proximity_id' => '019813a4-cbd1-7522-abbc-6962dc04621a'
+        ]);
+
+        Gate::create([
+            'name' => 'Gerbang 3',
+            'current_quota' => 100,
+            'proximity_id' => '019813a4-cbd1-7c36-bebe-c7e61a1838ae'
+        ]);
+
+        Gate::create([
+            'name' => 'Gerbang 4',
+            'current_quota' => 0,
+            'proximity_id' => '019813a4-cbd1-7935-b20a-ad4c94578a82'
         ]);
     }
 }
