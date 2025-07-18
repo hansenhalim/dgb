@@ -4,8 +4,8 @@ namespace App\Enum;
 
 enum Role: string
 {
-    case Guard = 'GRD';
-    case Manager = 'MAN';
+    case GUARD = 'GRD';
+    case MANAGER = 'MAN';
 
     public static function values(): array
     {

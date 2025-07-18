@@ -2,10 +2,11 @@
 
 namespace App\Enum;
 
-enum Position: string {
-    case Villa1 = 'VIL_1';
-    case Villa2 = 'VIL_2';
-    case Exclusive = 'VIL_E';
+enum Position: string
+{
+    case VILLA1 = 'VIL_1';
+    case VILLA2 = 'VIL_2';
+    case EXCLUSIVE = 'VIL_E';
 
     public static function values(): array
     {

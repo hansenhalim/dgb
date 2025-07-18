@@ -19,4 +19,9 @@ class TransferRequest extends Model
     {
         return $this->belongsTo(Gate::class);
     }
+
+    public function toGate(): BelongsTo
+    {
+        return $this->belongsTo(Gate::class);
+    }
 }

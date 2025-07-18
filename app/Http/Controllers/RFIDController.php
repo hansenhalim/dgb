@@ -25,7 +25,7 @@ class RFIDController extends Controller
         if (
             !$rfid ||
             !$rfid->rfidable instanceof Staff ||
-            $rfid->rfidable->role !== Role::Guard
+            $rfid->rfidable->role !== Role::GUARD
         ) {
             return response()->json([
                 'message' => 'RFID not found or not assigned to guard.',
@@ -48,7 +48,7 @@ class RFIDController extends Controller
         if (
             !$rfid ||
             !$rfid->rfidable instanceof Staff ||
-            $rfid->rfidable->role !== Role::Guard
+            $rfid->rfidable->role !== Role::GUARD
         ) {
             return response()->json([
                 'message' => 'RFID not found or not assigned to guard.',
@@ -78,7 +78,7 @@ class RFIDController extends Controller
         if (
             !$rfid ||
             !$rfid->rfidable instanceof Staff ||
-            $rfid->rfidable->role !== Role::Guard
+            $rfid->rfidable->role !== Role::GUARD
         ) {
             return response()->json([
                 'message' => 'RFID not found or not assigned to guard.',

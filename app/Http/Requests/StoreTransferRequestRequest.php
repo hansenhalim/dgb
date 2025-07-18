@@ -14,7 +14,9 @@ class StoreTransferRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'amount' => ['required', 'integer', 'between:1,65536'],
+            'from_gate' => ['required', 'exists:gates,id', 'different:to_gate'],
+            'to_gate' => ['required', 'exists:gates,id'],
         ];
     }
 }

@@ -16,7 +16,10 @@ class UpdateTransferRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => [Rule::enum(Status::class)],
+            'status' => [
+                'required',
+                Rule::in(['confirm', 'reject']),
+            ],
         ];
     }
 }

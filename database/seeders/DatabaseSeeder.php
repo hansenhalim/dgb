@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $staff = Staff::create([
-            'role' => Role::Guard,
+            'role' => Role::GUARD,
             'name' => 'SATPAM 1',
             'secret_key' => str_repeat('DEADBEEF', 128),
         ]);
@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
         $staff->rfids()->save($rfid);
 
         $staff = Staff::create([
-            'role' => Role::Guard,
+            'role' => Role::GUARD,
             'name' => 'SATPAM 2',
             'secret_key' => str_repeat('FEEDFACE', 128),
         ]);

@@ -19,5 +19,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/rfid-key', [RFIDController::class, 'getKey']);
     Route::get('/gates', [GateController::class, 'index']);
     Route::get('/gates/{gate}/transfer-requests', [TransferRequestController::class, 'index']);
+    Route::post('/transfer-requests', [TransferRequestController::class, 'store']);
     Route::patch('/transfer-requests/{transferRequest}', [TransferRequestController::class, 'respond']);
 });
