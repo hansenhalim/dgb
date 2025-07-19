@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enum\Role;
-use App\Http\Requests\GetKeyRequest;
-use App\Http\Requests\LookupUIDRequest;
-use App\Http\Requests\VerifyPINRequest;
+use App\Http\Requests\GetRfidKeyRequest;
+use App\Http\Requests\LookupUidRequest;
+use App\Http\Requests\VerifyPinRequest;
 use App\Http\Requests\VerifySecretRequest;
-use App\Models\RFID;
+use App\Models\Rfid;
 use App\Models\Staff;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,12 +15,12 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-class RFIDController extends Controller
+class RfidController extends Controller
 {
-    public function lookupUID(LookupUIDRequest $request): JsonResponse
+    public function lookupUid(LookupUidRequest $request): JsonResponse
     {
         $uid = $request->input('uid');
-        $rfid = Rfid::whereUID($uid)->first();
+        $rfid = Rfid::whereUid($uid)->first();
 
         if (
             !$rfid ||
@@ -40,10 +40,10 @@ class RFIDController extends Controller
         ]);
     }
 
-    public function verifyPIN(VerifyPINRequest $request): JsonResponse
+    public function verifyPin(VerifyPinRequest $request): JsonResponse
     {
         $uid = $request->input('uid');
-        $rfid = Rfid::whereUID($uid)->first();
+        $rfid = Rfid::whereUid($uid)->first();
 
         if (
             !$rfid ||
@@ -73,7 +73,7 @@ class RFIDController extends Controller
     public function verifySecret(VerifySecretRequest $request): JsonResponse
     {
         $uid = $request->input('uid');
-        $rfid = Rfid::whereUID($uid)->first();
+        $rfid = Rfid::whereUid($uid)->first();
 
         if (
             !$rfid ||
@@ -116,10 +116,10 @@ class RFIDController extends Controller
         ]);
     }
 
-    public function getKey(GetKeyRequest $request): JsonResponse
+    public function getRfidKey(GetRfidKeyRequest $request): JsonResponse
     {
         $uid = $request->query('uid');
-        $rfid = Rfid::whereUID($uid)->first();
+        $rfid = Rfid::whereUid($uid)->first();
 
         if (!$rfid || $rfid->rfidable instanceof Staff) {
             return response()->json([

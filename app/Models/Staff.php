@@ -23,6 +23,6 @@ class Staff extends Model
 
     public function rfids(): MorphMany
     {
-        return $this->morphMany(RFID::class, 'rfidable');
+        return $this->morphMany(Rfid::class, 'rfidable');
     }
 }

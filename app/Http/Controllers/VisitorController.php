@@ -2,65 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreVisitorRequest;
-use App\Http\Requests\UpdateVisitorRequest;
 use App\Models\Visitor;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class VisitorController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function show(Request $request)
     {
-        //
-    }
+        $identityNumber = $request->input('identity_number');
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+        $visitor = Visitor::select(['id', 'banned_at', 'banned_reason'])
+            ->where([
+                'identity_number' => Str::of($identityNumber)->hash('sha256'),
+            ])
+            ->first();
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreVisitorRequest $request)
-    {
-        //
-    }
+        if (!$visitor) {
+            return response()->noContent();
+        }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Visitor $visitor)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Visitor $visitor)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateVisitorRequest $request, Visitor $visitor)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Visitor $visitor)
-    {
-        //
+        return response()->json([
+            'message' => 'Visitor status retrieved successfully',
+            'data' => $visitor,
+        ]);
     }
 }

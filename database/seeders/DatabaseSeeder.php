@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Enum\Role;
 use App\Models\Gate;
-use App\Models\RFID;
+use App\Models\Rfid;
 use App\Models\Staff;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             'secret_key' => str_repeat('DEADBEEF', 128),
         ]);
 
-        $rfid = RFID::create([
+        $rfid = Rfid::create([
             'uid' => DB::raw("decode('" . 'DEADBEEF' . "', 'hex')"),
             'key' => DB::raw("decode('" . str_repeat('C0FFEEC0FFEE', 16) . "', 'hex')"),
             'pin' => '123456',
@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
             'secret_key' => str_repeat('FEEDFACE', 128),
         ]);
 
-        $rfid = RFID::create([
+        $rfid = Rfid::create([
             'uid' => DB::raw("decode('" . 'FEEDFACE' . "', 'hex')"),
             'key' => DB::raw("decode('" . str_repeat('C0FFEEC0FFEE', 16) . "', 'hex')"),
             'pin' => '123456',
@@ -45,17 +45,17 @@ class DatabaseSeeder extends Seeder
 
         $staff->rfids()->save($rfid);
 
-        RFID::create([
+        Rfid::create([
             'uid' => DB::raw("decode('" . 'DEADC0DE' . "', 'hex')"),
             'key' => DB::raw("decode('" . str_repeat('C0FFEEC0FFEE', 16) . "', 'hex')"),
         ]);
 
-        RFID::create([
+        Rfid::create([
             'uid' => DB::raw("decode('" . 'B16B00B5' . "', 'hex')"),
             'key' => DB::raw("decode('" . str_repeat('C0FFEEC0FFEE', 16) . "', 'hex')"),
         ]);
 
-        RFID::create([
+        Rfid::create([
             'uid' => DB::raw("decode('" . 'DEADF00D' . "', 'hex')"),
             'key' => DB::raw("decode('" . str_repeat('C0FFEEC0FFEE', 16) . "', 'hex')"),
         ]);
