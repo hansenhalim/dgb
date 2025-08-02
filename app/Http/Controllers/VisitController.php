@@ -2,65 +2,142 @@
 
 namespace App\Http\Controllers;
 
+use App\Enum\CurrentPosition;
 use App\Http\Requests\StoreVisitRequest;
-use App\Http\Requests\UpdateVisitRequest;
+use App\Models\Rfid;
 use App\Models\Visit;
+use App\Models\Visitor;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class VisitController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Visitor $visitor)
     {
-        //
+        $visits = $visitor->visits()->latest()->get([
+            'id',
+            'vehicle_plate_number',
+            'purpose_of_visit',
+            'destination_name',
+        ]);
+
+        return response()->json([
+            'message' => 'Previous visit records retrieved successfully.',
+            'data' => $visits,
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreVisitRequest $request)
     {
-        //
+        $uid = $request->input('uid');
+        $identityPhoto = $request->file('identity_photo');
+        $identityNumber = $request->input('identity_number');
+        $fullname = $request->input('fullname');
+        $vehiclePlateNumber = $request->input('vehicle_plate_number');
+        $purposeOfVisit = $request->input('purpose_of_visit');
+        $destinationName = $request->input('destination_name');
+
+        $rfid = Rfid::whereUid($uid)->first();
+
+        if (!$rfid || $rfid->rfidable instanceof Staff) {
+            return response()->json([
+                'message' => 'RFID not found or assigned to staff.',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $key = stream_get_contents($rfid->key, 96);
+        $rfidKey = Str::upper(bin2hex($key));
+
+        $visitor = Visitor::firstOrCreate([
+            'identity_number' => Str::of($identityNumber)->hash('sha256'),
+        ]);
+
+        $visit = $visitor->visits()->create([
+            'identity_photo' => DB::raw("decode('{$this->encryptToHex($identityPhoto)}', 'hex')"),
+            'vehicle_plate_number' => $vehiclePlateNumber,
+            'purpose_of_visit' => $purposeOfVisit,
+            'destination_name' => $destinationName,
+            'current_position' => CurrentPosition::OUTSIDE,
+        ]);
+
+        $payload = [
+            "visit_id" => $visit->id,
+            "identity_number" => Str::mask($identityNumber, '*', -13, 10),
+            "fullname" => $this->maskName($fullname),
+            "vehicle_plate_number" => $vehiclePlateNumber,
+            "purpose_of_visit" => $purposeOfVisit,
+            "destination_name" => $destinationName,
+            "created_at" => $visit->created_at,
+        ];
+
+        return response()->json([
+            "message" => "Visit created successfully",
+            "data" => [
+                "id" => $visit->id,
+                "rfid_key" => $rfidKey,
+                "payload" => $payload,
+            ]
+        ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Visit $visit)
+    public function checkin(Request $request, Visit $visit)
     {
-        //
+        return response()->json([
+            'message' => 'Gate opened successfully',
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Visit $visit)
+    public function checkout(Request $request, Visit $visit)
     {
-        //
+        return response()->json([
+            'message' => 'Gate opened successfully',
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateVisitRequest $request, Visit $visit)
+    private function encryptToHex(UploadedFile $file): string
     {
-        //
+        // Get raw file content
+        $raw = file_get_contents($file->getRealPath());
+
+        // Encrypt the content
+        $encrypted = Crypt::encrypt($raw);
+
+        // Convert to HEX
+        $hex = bin2hex($encrypted);
+
+        return $hex;
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Visit $visit)
+    private function maskName(string $fullname): string
     {
-        //
+        $words = explode(' ', trim($fullname));
+
+        $maskedWords = array_map(function ($word) {
+            $length = Str::length($word);
+
+            if ($length <= 2) {
+                // Mask all but first letter
+                return Str::substr($word, 0, 1) . str_repeat('*', $length - 1);
+            }
+
+            if ($length <= 4) {
+                // Keep first and last letters
+                return Str::substr($word, 0, 1) .
+                    str_repeat('*', $length - 2) .
+                    Str::substr($word, -1);
+            }
+
+            // Keep first 2 and last 1 characters
+            return Str::substr($word, 0, 2) .
+                str_repeat('*', $length - 3) .
+                Str::substr($word, -1);
+        }, $words);
+
+        return implode(' ', $maskedWords);
     }
+
 }

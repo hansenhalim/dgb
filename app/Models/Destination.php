@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Destination extends Model
 {
+    protected $primaryKey = 'name';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected function casts(): array
     {
         return [

@@ -14,7 +14,6 @@ return new class extends Migration {
         Schema::create('visitors', function (Blueprint $table) {
             $table->uuid('id')->default(DB::raw('uuid_generate_v7()'));
             $table->string('identity_number')->unique();
-            $table->binary('identity_photo', 512_000);
             $table->timestamp('banned_at')->nullable();
             $table->string('banned_reason')->nullable();
             $table->timestamps();

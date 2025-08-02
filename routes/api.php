@@ -1,15 +1,12 @@
 <?php
 
+use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\GateController;
 use App\Http\Controllers\RfidController;
 use App\Http\Controllers\TransferRequestController;
+use App\Http\Controllers\VisitController;
 use App\Http\Controllers\VisitorController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
 
 Route::post('/auth/lookup-uid', [RfidController::class, 'lookupUid']);
 Route::post('/auth/verify-pin', [RfidController::class, 'verifyPin']);
@@ -23,4 +20,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/transfer-requests', [TransferRequestController::class, 'store']);
     Route::patch('/transfer-requests/{transferRequest}', [TransferRequestController::class, 'respond']);
     Route::get('/visitors', [VisitorController::class, 'show']);
+    Route::get('/visitors/{visitor}/visits', [VisitController::class, 'index']);
+    Route::get('/destinations', [DestinationController::class, 'index']);
+    Route::post('/visits', [VisitController::class, 'store']);
+    Route::post('/visits/{visit}/checkin', [VisitController::class, 'checkin']);
+    Route::post('/visits/{visit}/checkout', [VisitController::class, 'checkout']);
 });

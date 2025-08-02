@@ -14,6 +14,6 @@ class AsSha256Hash implements CastsInboundAttributes
         mixed $value,
         array $attributes,
     ): string {
-        return Str::of(hex2bin($value))->hash('sha256');
+        return Str::of($value)->hash('sha256');
     }
 }

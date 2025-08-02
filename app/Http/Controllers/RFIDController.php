@@ -101,9 +101,13 @@ class RfidController extends Controller
 
         $token = $guard->createToken($deviceName)->plainTextToken;
 
+        // Calculate token expiration (12 hours from now)
+        $validUntil = now()->addHours(12)->utc()->toISOString();
+
         return response()->json([
             'message' => 'You have logged in successfully.',
             'token' => $token,
+            'valid_until' => $validUntil, // in UTC
         ]);
     }
 
@@ -123,7 +127,7 @@ class RfidController extends Controller
 
         if (!$rfid || $rfid->rfidable instanceof Staff) {
             return response()->json([
-                'message' => 'RFID not found or assigned to guard.',
+                'message' => 'RFID not found or assigned to staff.',
             ], Response::HTTP_NOT_FOUND);
         }
 

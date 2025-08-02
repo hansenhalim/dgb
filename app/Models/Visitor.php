@@ -2,18 +2,18 @@
 
 namespace App\Models;
 
-use App\Casts\AsSha256Hash;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Visitor extends Model
 {
     use HasUuids;
 
-    protected function casts(): array
+    protected $fillable = ['identity_number'];
+
+    public function visits(): HasMany
     {
-        return [
-            'identity_number' => AsSha256Hash::class,
-        ];
+        return $this->hasMany(Visit::class);
     }
 }

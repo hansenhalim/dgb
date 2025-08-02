@@ -15,8 +15,8 @@ return new class extends Migration {
         Schema::create('visits', function (Blueprint $table) {
             $table->uuid('id')->default(DB::raw('uuid_generate_v7()'));
             $table->foreignUuid('visitor_id')->nullable()->constrained();
-            $table->binary('identity_photo')->nullable();
-            $table->string('vehicle_plate_number')->nullable();
+            $table->binary('identity_photo', 512_000)->nullable();
+            $table->string('vehicle_plate_number', 20)->nullable();
             $table->string('purpose_of_visit')->nullable();
             $table->string('destination_name', 30)->nullable();
             $table->timestamp('checkin_at')->nullable();
