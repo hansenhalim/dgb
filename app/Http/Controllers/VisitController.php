@@ -85,6 +85,11 @@ class VisitController extends Controller
 
     public function checkin(Request $request, Visit $visit)
     {
+        $visit->checkin_at = now();
+        $visit->checkin_gate_id = $request->input('gate_id');
+        $visit->current_position = CurrentPosition::VILLA1;
+        $visit->save();
+
         return response()->json([
             'message' => 'Gate opened successfully',
         ]);
@@ -92,6 +97,11 @@ class VisitController extends Controller
 
     public function checkout(Request $request, Visit $visit)
     {
+        $visit->checkout_at = now();
+        $visit->checkout_gate_id = $request->input('gate_id');
+        $visit->current_position = CurrentPosition::OUTSIDE;
+        $visit->save();
+
         return response()->json([
             'message' => 'Gate opened successfully',
         ]);

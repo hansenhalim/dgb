@@ -7,7 +7,7 @@ enum CurrentPosition: string
     case OUTSIDE = 'OUT';
     case VILLA1 = 'VIL_1';
     case VILLA2 = 'VIL_2';
-    case EXLCUSIVE = 'VIL_E';
+    case EXCLUSIVE = 'VIL_E';
     case TRANSIT = 'TRNST';
 
     public static function values(): array
