@@ -61,12 +61,9 @@ class RfidController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $key = stream_get_contents($rfid->key, 96);
-        $rfidKey = Str::upper(bin2hex($key));
-
         return response()->json([
             'message' => 'PIN is valid.',
-            'rfid_key' => $rfidKey,
+            'rfid_key' => $rfid->key,
         ]);
     }
 
@@ -131,12 +128,9 @@ class RfidController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $key = stream_get_contents($rfid->key, 96);
-        $rfidKey = Str::upper(bin2hex($key));
-
         return response()->json([
             'message' => 'Successfully retrieving key.',
-            'rfid_key' => $rfidKey,
+            'rfid_key' => $rfid->key,
         ]);
     }
 }

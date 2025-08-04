@@ -49,8 +49,7 @@ class VisitController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $key = stream_get_contents($rfid->key, 96);
-        $rfidKey = Str::upper(bin2hex($key));
+        $rfidKey = Str::upper($rfid->key);
 
         $visitor = Visitor::firstOrCreate([
             'identity_number' => Str::of($identityNumber)->hash('sha256'),
