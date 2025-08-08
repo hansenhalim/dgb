@@ -7,6 +7,7 @@ COPY composer.json composer.lock ./
 
 RUN composer install \
     --ignore-platform-req=ext-exif \
+    --ignore-platform-req=ext-intl \
     # --no-dev \
     --optimize-autoloader \
     --no-interaction \
@@ -21,11 +22,13 @@ WORKDIR /var/www/html
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
+    libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install \
     pdo_pgsql \
-    exif
+    intl \
+    exif \
 
 COPY . .
 

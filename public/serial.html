@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Serial API Demo</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                padding: 20px;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+            button {
+                padding: 10px 15px;
+                margin: 5px;
+            }
+            input,
+            textarea {
+                width: 100%;
+                padding: 8px;
+                margin: 5px 0;
+            }
+            #output {
+                border: 1px solid #ccc;
+                padding: 10px;
+                height: 200px;
+                overflow-y: scroll;
+                background: #f9f9f9;
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Web Serial API Demo</h1>
+
+            <div>
+                <label>Baud Rate:</label>
+                <select id="baudRate">
+                    <option value="9600">9600</option>
+                    <option value="19200">19200</option>
+                    <option value="38400">38400</option>
+                    <option value="57600">57600</option>
+                    <option value="115200">115200</option>
+                </select>
+            </div>
+
+            <div>
+                <button id="connectBtn">Connect</button>
+                <button id="disconnectBtn" disabled>Disconnect</button>
+            </div>
+
+            <div>
+                <input
+                    type="text"
+                    id="messageInput"
+                    placeholder="Enter message to send"
+                />
+                <button id="sendBtn" disabled>Send</button>
+            </div>
+
+            <div>
+                <button id="startReadingBtn" disabled>Start Reading</button>
+                <button id="stopReadingBtn" disabled>Stop Reading</button>
+            </div>
+
+            <div>
+                <h3>Received Data:</h3>
+                <div id="output"></div>
+                <button id="clearBtn">Clear Output</button>
+            </div>
+        </div>
+
+        <script>
+            // Include the SerialConnection class here or import it
+            class SerialConnection {
+                constructor() {
+                    this.port = null;
+                    this.reader = null;
+                    this.writer = null;
+                    this.isConnected = false;
+                }
+
+                // Check if Serial API is supported
+                isSupported() {
+                    return "serial" in navigator;
+                }
+
+                // Request and connect to a serial port
+                async connect(baudRate = 9600) {
+                    if (!this.isSupported()) {
+                        throw new Error(
+                            "Web Serial API is not supported in this browser"
+                        );
+                    }
+
+                    try {
+                        // Request a port from the user
+                        this.port = await navigator.serial.requestPort();
+
+                        // Open the port with specified options
+                        await this.port.open({
+                            baudRate: baudRate,
+                            dataBits: 8,
+                            stopBits: 1,
+                            parity: "none",
+                            flowControl: "none",
+                        });
+
+                        // Set up reader and writer
+                        this.reader = this.port.readable.getReader();
+                        this.writer = this.port.writable.getWriter();
+                        this.isConnected = true;
+
+                        console.log("Connected to serial port");
+                        return true;
+                    } catch (error) {
+                        console.error("Failed to connect:", error);
+                        return false;
+                    }
+                }
+
+                // Send data to the serial port
+                async send(data) {
+                    if (!this.isConnected || !this.writer) {
+                        throw new Error("Not connected to a serial port");
+                    }
+
+                    try {
+                        const encoder = new TextEncoder();
+                        await this.writer.write(encoder.encode(data));
+                        console.log("Sent:", data);
+                    } catch (error) {
+                        console.error("Failed to send data:", error);
+                    }
+                }
+
+                // Read data from the serial port
+                async read() {
+                    if (!this.isConnected || !this.reader) {
+                        throw new Error("Not connected to a serial port");
+                    }
+
+                    try {
+                        const { value, done } = await this.reader.read();
+                        if (done) {
+                            console.log("Reader has been canceled");
+                            return null;
+                        }
+
+                        const decoder = new TextDecoder();
+                        const text = decoder.decode(value);
+                        console.log("Received:", text);
+                        return text;
+                    } catch (error) {
+                        console.error("Failed to read data:", error);
+                        return null;
+                    }
+                }
+
+                // Start continuous reading with callback
+                async startReading(onDataReceived) {
+                    if (!this.isConnected || !this.reader) {
+                        throw new Error("Not connected to a serial port");
+                    }
+
+                    try {
+                        while (this.isConnected) {
+                            const { value, done } = await this.reader.read();
+                            if (done) break;
+
+                            const decoder = new TextDecoder();
+                            const text = decoder.decode(value);
+
+                            if (onDataReceived) {
+                                onDataReceived(text);
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error during reading:", error);
+                    }
+                }
+
+                // Disconnect from the serial port
+                async disconnect() {
+                    try {
+                        if (this.reader) {
+                            await this.reader.cancel();
+                            this.reader.releaseLock();
+                            this.reader = null;
+                        }
+
+                        if (this.writer) {
+                            await this.writer.close();
+                            this.writer = null;
+                        }
+
+                        if (this.port) {
+                            await this.port.close();
+                            this.port = null;
+                        }
+
+                        this.isConnected = false;
+                        console.log("Disconnected from serial port");
+                    } catch (error) {
+                        console.error("Error during disconnect:", error);
+                    }
+                }
+
+                // Get available ports (if previously granted permission)
+                async getAvailablePorts() {
+                    if (!this.isSupported()) {
+                        return [];
+                    }
+
+                    try {
+                        const ports = await navigator.serial.getPorts();
+                        return ports;
+                    } catch (error) {
+                        console.error("Failed to get available ports:", error);
+                        return [];
+                    }
+                }
+            }
+
+            const serial = new SerialConnection();
+            let isReading = false;
+
+            // DOM elements
+            const connectBtn = document.getElementById("connectBtn");
+            const disconnectBtn = document.getElementById("disconnectBtn");
+            const sendBtn = document.getElementById("sendBtn");
+            const messageInput = document.getElementById("messageInput");
+            const startReadingBtn = document.getElementById("startReadingBtn");
+            const stopReadingBtn = document.getElementById("stopReadingBtn");
+            const output = document.getElementById("output");
+            const clearBtn = document.getElementById("clearBtn");
+            const baudRateSelect = document.getElementById("baudRate");
+
+            // Helper function to append text to output
+            function appendToOutput(text, type = "info") {
+                const timestamp = new Date().toLocaleTimeString();
+                const div = document.createElement("div");
+                div.style.color =
+                    type === "error"
+                        ? "red"
+                        : type === "sent"
+                        ? "blue"
+                        : "green";
+                div.textContent = `[${timestamp}] ${text}`;
+                output.appendChild(div);
+                output.scrollTop = output.scrollHeight;
+            }
+
+            // Event listeners
+            connectBtn.addEventListener("click", async () => {
+                const baudRate = parseInt(baudRateSelect.value);
+                const success = await serial.connect(baudRate);
+
+                if (success) {
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = false;
+                    sendBtn.disabled = false;
+                    startReadingBtn.disabled = false;
+                    appendToOutput("Connected successfully!");
+                } else {
+                    appendToOutput("Failed to connect", "error");
+                }
+            });
+
+            disconnectBtn.addEventListener("click", async () => {
+                await serial.disconnect();
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                sendBtn.disabled = true;
+                startReadingBtn.disabled = true;
+                stopReadingBtn.disabled = true;
+                isReading = false;
+                appendToOutput("Disconnected");
+            });
+
+            sendBtn.addEventListener("click", async () => {
+                const message = messageInput.value;
+                if (message) {
+                    await serial.send(message + "\n");
+                    appendToOutput(`Sent: ${message}`, "sent");
+                    messageInput.value = "";
+                }
+            });
+
+            messageInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    sendBtn.click();
+                }
+            });
+
+            startReadingBtn.addEventListener("click", async () => {
+                isReading = true;
+                startReadingBtn.disabled = true;
+                stopReadingBtn.disabled = false;
+
+                // Start reading in a loop
+                serial.startReading((data) => {
+                    appendToOutput(`Received: ${data.trim()}`);
+                });
+            });
+
+            stopReadingBtn.addEventListener("click", () => {
+                isReading = false;
+                startReadingBtn.disabled = false;
+                stopReadingBtn.disabled = true;
+                appendToOutput("Stopped reading");
+            });
+
+            clearBtn.addEventListener("click", () => {
+                output.innerHTML = "";
+            });
+
+            // Check if Serial API is supported
+            if (!serial.isSupported()) {
+                appendToOutput(
+                    "Web Serial API is not supported in this browser",
+                    "error"
+                );
+                connectBtn.disabled = true;
+            }
+        </script>
+    </body>
+</html>
