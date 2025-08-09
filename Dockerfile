@@ -1,5 +1,5 @@
 # Stage 1: Build environment and Composer dependencies
-FROM composer:2.2 as build
+FROM composer:2.2 AS build
 
 WORKDIR /app
 
