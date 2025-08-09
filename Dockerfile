@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN docker-php-ext-install \
     pdo_pgsql \
     intl \
-    exif \
+    exif
 
 COPY . .
 
