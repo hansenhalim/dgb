@@ -107,15 +107,22 @@ class VisitController extends Controller
         ]);
     }
 
+    public function transit(Request $request, Visit $visit)
+    {
+        $visit->checkout_at = now();
+        $visit->checkout_gate_id = $request->input('gate_id');
+        $visit->current_position = CurrentPosition::TRANSIT;
+        $visit->save();
+
+        return response()->json([
+            'message' => 'Gate opened successfully',
+        ]);
+    }
+
     private function encryptToHex(UploadedFile $file): string
     {
-        // Get raw file content
         $raw = file_get_contents($file->getRealPath());
-
-        // Encrypt the content
         $encrypted = Crypt::encrypt($raw);
-
-        // Convert to HEX
         $hex = bin2hex($encrypted);
 
         return $hex;
