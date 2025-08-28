@@ -2,10 +2,6 @@ FROM unit:php8.4
 
 WORKDIR /var/www/html
 
-COPY docker/config.json docker/entrypoint.sh /docker-entrypoint.d/
-
-RUN chmod +x /docker-entrypoint.d/entrypoint.sh
-
 RUN apt-get update && apt-get install -y \
     libicu-dev \
     libpq-dev \
@@ -31,6 +27,10 @@ RUN composer install \
 
 COPY --chown=unit:unit . .
 
-RUN php artisan optimize && php artisan filament:optimize
+RUN composer dump-autoload --no-dev --optimize
+
+COPY docker/config.json docker/entrypoint.sh /docker-entrypoint.d/
+
+RUN chmod +x /docker-entrypoint.d/entrypoint.sh
 
 EXPOSE 80
