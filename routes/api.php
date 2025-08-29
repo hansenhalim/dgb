@@ -26,4 +26,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/visits/{visit}/checkin', [VisitController::class, 'checkin']);
     Route::post('/visits/{visit}/checkout', [VisitController::class, 'checkout']);
     Route::post('/visits/{visit}/transit', [VisitController::class, 'transit']);
+    Route::post('/visits/{visit}/transit-enter', [VisitController::class, 'transitEnter']);
 });

@@ -109,8 +109,16 @@ class VisitController extends Controller
 
     public function transit(Request $request, Visit $visit)
     {
-        $visit->checkout_at = now();
-        $visit->checkout_gate_id = $request->input('gate_id');
+        $visit->current_position = CurrentPosition::TRANSIT;
+        $visit->save();
+
+        return response()->json([
+            'message' => 'Gate opened successfully',
+        ]);
+    }
+
+    public function transitEnter(Request $request, Visit $visit)
+    {
         $visit->current_position = CurrentPosition::TRANSIT;
         $visit->save();
 
