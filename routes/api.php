@@ -4,10 +4,12 @@ use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\GateController;
 use App\Http\Controllers\RfidController;
 use App\Http\Controllers\TransferRequestController;
+use App\Http\Controllers\VersionController;
 use App\Http\Controllers\VisitController;
 use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/version', [VersionController::class, 'index']);
 Route::post('/auth/lookup-uid', [RfidController::class, 'lookupUid']);
 Route::post('/auth/verify-pin', [RfidController::class, 'verifyPin']);
 Route::post('/auth/verify-secret', [RfidController::class, 'verifySecret']);

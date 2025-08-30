@@ -86,10 +86,10 @@ class VisitController extends Controller
     public function checkin(Request $request, Visit $visit)
     {
         $gateId = $request->input('gate_id');
-        
+
         $visit->checkin_at = now();
         $visit->checkin_gate_id = $gateId;
-        $visit->current_position = $this->getPositionForGate($gateId);
+        $visit->current_position = CurrentPosition::getCheckinPosition($gateId);
         $visit->save();
 
         return response()->json([
@@ -97,22 +97,13 @@ class VisitController extends Controller
         ]);
     }
 
-    private function getPositionForGate(int $gateId): CurrentPosition
-    {
-        return match ($gateId) {
-            1 => CurrentPosition::VILLA1,
-            2 => CurrentPosition::VILLA2,
-            3 => CurrentPosition::EXCLUSIVE,
-            4 => CurrentPosition::VILLA1, // Default fallback
-            default => CurrentPosition::VILLA1,
-        };
-    }
-
     public function checkout(Request $request, Visit $visit)
     {
+        $gateId = $request->input('gate_id');
+
         $visit->checkout_at = now();
-        $visit->checkout_gate_id = $request->input('gate_id');
-        $visit->current_position = CurrentPosition::OUTSIDE;
+        $visit->checkout_gate_id = $gateId;
+        $visit->current_position = CurrentPosition::getCheckoutPosition($gateId);
         $visit->save();
 
         return response()->json([
@@ -122,7 +113,9 @@ class VisitController extends Controller
 
     public function transit(Request $request, Visit $visit)
     {
-        $visit->current_position = CurrentPosition::TRANSIT;
+        $gateId = $request->input('gate_id');
+
+        $visit->current_position = CurrentPosition::getTransitPosition($gateId);
         $visit->save();
 
         return response()->json([
@@ -132,7 +125,9 @@ class VisitController extends Controller
 
     public function transitEnter(Request $request, Visit $visit)
     {
-        $visit->current_position = CurrentPosition::TRANSIT;
+        $gateId = $request->input('gate_id');
+
+        $visit->current_position = CurrentPosition::getCheckinPosition($gateId);
         $visit->save();
 
         return response()->json([
