@@ -85,14 +85,27 @@ class VisitController extends Controller
 
     public function checkin(Request $request, Visit $visit)
     {
+        $gateId = $request->input('gate_id');
+        
         $visit->checkin_at = now();
-        $visit->checkin_gate_id = $request->input('gate_id');
-        $visit->current_position = CurrentPosition::VILLA1;
+        $visit->checkin_gate_id = $gateId;
+        $visit->current_position = $this->getPositionForGate($gateId);
         $visit->save();
 
         return response()->json([
             'message' => 'Gate opened successfully',
         ]);
+    }
+
+    private function getPositionForGate(int $gateId): CurrentPosition
+    {
+        return match ($gateId) {
+            1 => CurrentPosition::VILLA1,
+            2 => CurrentPosition::VILLA2,
+            3 => CurrentPosition::EXCLUSIVE,
+            4 => CurrentPosition::VILLA1, // Default fallback
+            default => CurrentPosition::VILLA1,
+        };
     }
 
     public function checkout(Request $request, Visit $visit)
