@@ -16,7 +16,7 @@ class StoreVisitRequest extends FormRequest
         return [
             'uid' => ['required', 'string', 'size:8', 'regex:/^[A-F0-9]+$/'],
             'identity_photo' => ['required', 'file', 'image', 'max:512'],
-            'identity_number' => ['string', 'size:16', 'numeric'],
+            'identity_number' => ['string', 'size:16'],
             'fullname' => ['string', 'max:255'],
             'vehicle_plate_number' => ['string', 'max:20'],
             'purpose_of_visit' => ['required', 'string', 'max:255'],

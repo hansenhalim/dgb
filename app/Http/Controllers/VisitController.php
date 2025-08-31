@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enum\CurrentPosition;
 use App\Http\Requests\StoreVisitRequest;
+use App\Models\Gate;
 use App\Models\Rfid;
 use App\Models\Visit;
 use App\Models\Visitor;
@@ -85,12 +86,20 @@ class VisitController extends Controller
 
     public function checkin(Request $request, Visit $visit)
     {
+        if ($visit->checkin_at) {
+            return response()->json([
+                'message' => 'Gate opened successfully',
+            ]);
+        }
+
         $gateId = $request->input('gate_id');
 
         $visit->checkin_at = now();
         $visit->checkin_gate_id = $gateId;
         $visit->current_position = CurrentPosition::getCheckinPosition($gateId);
         $visit->save();
+
+        Gate::where('id', $gateId)->decrement('current_quota');
 
         return response()->json([
             'message' => 'Gate opened successfully',
@@ -99,12 +108,20 @@ class VisitController extends Controller
 
     public function checkout(Request $request, Visit $visit)
     {
+        if ($visit->checkout_at) {
+            return response()->json([
+                'message' => 'Gate opened successfully',
+            ]);
+        }
+
         $gateId = $request->input('gate_id');
 
         $visit->checkout_at = now();
         $visit->checkout_gate_id = $gateId;
         $visit->current_position = CurrentPosition::getCheckoutPosition($gateId);
         $visit->save();
+
+        Gate::where('id', $gateId)->increment('current_quota');
 
         return response()->json([
             'message' => 'Gate opened successfully',
