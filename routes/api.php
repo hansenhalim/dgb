@@ -24,6 +24,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/visitors', [VisitorController::class, 'show']);
     Route::get('/visitors/{visitor}/visits', [VisitController::class, 'index']);
     Route::get('/destinations', [DestinationController::class, 'index']);
+    Route::get('/visits/history', [VisitController::class, 'history']);
     Route::post('/visits', [VisitController::class, 'store']);
     Route::post('/visits/{visit}/checkin', [VisitController::class, 'checkin']);
     Route::post('/visits/{visit}/checkout', [VisitController::class, 'checkout']);

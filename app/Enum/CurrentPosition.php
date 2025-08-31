@@ -18,11 +18,8 @@ enum CurrentPosition: string
     public static function getCheckinPosition(int $gateId): self
     {
         return match ($gateId) {
-            1 => self::VILLA1,
-            2 => self::VILLA1,
+            1, 2 => self::VILLA1,
             3 => self::VILLA2,
-            4 => self::EXCLUSIVE,
-            default => self::VILLA1,
         };
     }
 
@@ -30,7 +27,6 @@ enum CurrentPosition: string
     {
         return match ($gateId) {
             1, 2, 3 => self::OUTSIDE,
-            default => self::OUTSIDE,
         };
     }
 
@@ -39,7 +35,26 @@ enum CurrentPosition: string
         return match ($gateId) {
             2, 3 => self::TRANSIT,
             4 => self::VILLA2,
-            default => self::TRANSIT,
+        };
+    }
+
+    public static function getTransitEnterPosition(int $gateId): self
+    {
+        return match ($gateId) {
+            2 => self::VILLA1,
+            3 => self::VILLA2,
+            4 => self::EXCLUSIVE,
+        };
+    }
+
+    public function formatName(): string
+    {
+        return match ($this) {
+            self::VILLA1 => 'VILLA 1',
+            self::VILLA2 => 'VILLA 2',
+            self::EXCLUSIVE => 'VILLA EXCLUSIVE',
+            self::OUTSIDE => 'OUTSIDE',
+            self::TRANSIT => 'TRANSIT',
         };
     }
 }

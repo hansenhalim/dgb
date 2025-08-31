@@ -127,11 +127,40 @@ class VisitController extends Controller
     {
         $gateId = $request->input('gate_id');
 
-        $visit->current_position = CurrentPosition::getCheckinPosition($gateId);
+        $visit->current_position = CurrentPosition::getTransitEnterPosition($gateId);
         $visit->save();
 
         return response()->json([
             'message' => 'Gate opened successfully',
+        ]);
+    }
+
+    public function history(Request $request)
+    {
+        $gateId = $request->input('gate_id');
+
+        if (!$gateId) {
+            return response()->json([
+                'message' => 'Gate ID is required',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $query = Visit::latest()->where(function ($q) use ($gateId) {
+            $q->where('checkin_gate_id', $gateId)
+                ->orWhere('checkout_gate_id', $gateId);
+        });
+
+        $visits = $query->get()->map(fn($visit) => [
+            'id' => $visit->id,
+            'vehicle_plate_number' => $visit->vehicle_plate_number,
+            'current_position' => $visit->current_position->formatName(),
+            'destination_name' => $visit->destination_name,
+            'created_at' => $visit->created_at,
+        ]);
+
+        return response()->json([
+            'message' => 'Successfully get visit history',
+            'data' => $visits,
         ]);
     }
 
@@ -171,5 +200,4 @@ class VisitController extends Controller
 
         return implode(' ', $maskedWords);
     }
-
 }
