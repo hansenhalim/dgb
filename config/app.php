@@ -123,4 +123,23 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Gate Webhook URLs
+    |--------------------------------------------------------------------------
+    |
+    | These are the webhook URLs that will be called when gate operations
+    | are performed. The URLs are configured per gate and direction (IN/OUT).
+    |
+    */
+
+    'gate_1_in_webhook_url' => env('GATE_1_IN_WEBHOOK_URL'),
+    'gate_1_out_webhook_url' => env('GATE_1_OUT_WEBHOOK_URL'),
+    'gate_2_in_webhook_url' => env('GATE_2_IN_WEBHOOK_URL'),
+    'gate_2_out_webhook_url' => env('GATE_2_OUT_WEBHOOK_URL'),
+    'gate_3_in_webhook_url' => env('GATE_3_IN_WEBHOOK_URL'),
+    'gate_3_out_webhook_url' => env('GATE_3_OUT_WEBHOOK_URL'),
+    'gate_4_in_webhook_url' => env('GATE_4_IN_WEBHOOK_URL'),
+    'gate_4_out_webhook_url' => env('GATE_4_OUT_WEBHOOK_URL'),
+
 ];

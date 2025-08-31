@@ -13,6 +13,7 @@ use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class VisitController extends Controller
@@ -65,34 +66,36 @@ class VisitController extends Controller
         ]);
 
         $payload = [
-            "visit_id" => $visit->id,
-            "identity_number" => Str::mask($identityNumber, '*', -13, 10),
-            "fullname" => $this->maskName($fullname),
-            "vehicle_plate_number" => $vehiclePlateNumber,
-            "purpose_of_visit" => $purposeOfVisit,
-            "destination_name" => $destinationName,
-            "created_at" => $visit->created_at,
+            'visit_id' => $visit->id,
+            'identity_number' => Str::mask($identityNumber, '*', -13, 10),
+            'fullname' => $this->maskName($fullname),
+            'vehicle_plate_number' => $vehiclePlateNumber,
+            'purpose_of_visit' => $purposeOfVisit,
+            'destination_name' => $destinationName,
+            'created_at' => $visit->created_at,
         ];
 
         return response()->json([
-            "message" => "Visit created successfully",
-            "data" => [
-                "id" => $visit->id,
-                "rfid_key" => $rfidKey,
-                "payload" => $payload,
-            ]
+            'message' => 'Visit created successfully',
+            'data' => [
+                'id' => $visit->id,
+                'rfid_key' => $rfidKey,
+                'payload' => $payload,
+            ],
         ]);
     }
 
     public function checkin(Request $request, Visit $visit)
     {
+        $gateId = $request->input('gate_id');
+
+        $this->callWebhook($gateId, 'in', $visit);
+
         if ($visit->checkin_at) {
             return response()->json([
                 'message' => 'Gate opened successfully',
             ]);
         }
-
-        $gateId = $request->input('gate_id');
 
         $visit->checkin_at = now();
         $visit->checkin_gate_id = $gateId;
@@ -108,13 +111,15 @@ class VisitController extends Controller
 
     public function checkout(Request $request, Visit $visit)
     {
+        $gateId = $request->input('gate_id');
+
+        $this->callWebhook($gateId, 'out', $visit);
+
         if ($visit->checkout_at) {
             return response()->json([
                 'message' => 'Gate opened successfully',
             ]);
         }
-
-        $gateId = $request->input('gate_id');
 
         $visit->checkout_at = now();
         $visit->checkout_gate_id = $gateId;
@@ -132,6 +137,8 @@ class VisitController extends Controller
     {
         $gateId = $request->input('gate_id');
 
+        $this->callWebhook($gateId, 'out', $visit);
+
         $visit->current_position = CurrentPosition::getTransitPosition($gateId);
         $visit->save();
 
@@ -143,6 +150,8 @@ class VisitController extends Controller
     public function transitEnter(Request $request, Visit $visit)
     {
         $gateId = $request->input('gate_id');
+
+        $this->callWebhook($gateId, 'in', $visit);
 
         $visit->current_position = CurrentPosition::getTransitEnterPosition($gateId);
         $visit->save();
@@ -216,5 +225,26 @@ class VisitController extends Controller
         }, $words);
 
         return implode(' ', $maskedWords);
+    }
+
+    private function callWebhook(int $gateId, string $direction, Visit $visit): void
+    {
+        $webhookUrl = config("app.gate_{$gateId}_{$direction}_webhook_url");
+
+        if (!$webhookUrl) {
+            return;
+        }
+
+        try {
+            Http::timeout(3)->get($webhookUrl);
+        } catch (\Exception $e) {
+            logger()->warning('Tasmota webhook request failed with exception', [
+                'url' => $webhookUrl,
+                'error' => $e->getMessage(),
+                'gate_id' => $gateId,
+                'direction' => $direction,
+                'visit_id' => $visit->id,
+            ]);
+        }
     }
 }
