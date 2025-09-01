@@ -52,7 +52,7 @@ enum CurrentPosition: string
         return match ($this) {
             self::VILLA1 => 'VILLA 1',
             self::VILLA2 => 'VILLA 2',
-            self::EXCLUSIVE => 'VILLA EXCLUSIVE',
+            self::EXCLUSIVE => 'EXCLUSIVE',
             self::OUTSIDE => 'OUTSIDE',
             self::TRANSIT => 'TRANSIT',
         };

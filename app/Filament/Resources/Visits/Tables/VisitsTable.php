@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Visits\Tables;
 
 use App\Enum\CurrentPosition;
+use App\Filament\Exports\VisitExporter;
+use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -83,7 +85,8 @@ class VisitsTable
                 ViewAction::make(),
             ])
             ->toolbarActions([
-                //
+                ExportAction::make()
+                    ->exporter(VisitExporter::class),
             ])
             ->defaultSort('created_at', 'desc');
     }

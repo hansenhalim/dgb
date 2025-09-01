@@ -176,7 +176,7 @@ class VisitController extends Controller
                 ->orWhere('checkout_gate_id', $gateId);
         });
 
-        $visits = $query->get()->map(fn($visit) => [
+        $visits = $query->limit(5)->get()->map(fn($visit) => [
             'id' => $visit->id,
             'vehicle_plate_number' => $visit->vehicle_plate_number,
             'current_position' => $visit->current_position->formatName(),
