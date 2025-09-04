@@ -52,4 +52,5 @@ class Visit extends Model
     {
         return $this->belongsTo(Gate::class, 'checkout_gate_id');
     }
+
 }

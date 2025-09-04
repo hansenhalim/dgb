@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enum\CurrentPosition;
+use App\Enum\Position;
 use App\Http\Requests\StoreVisitRequest;
 use App\Models\Gate;
 use App\Models\Rfid;
@@ -73,6 +74,8 @@ class VisitController extends Controller
             'purpose_of_visit' => $purposeOfVisit,
             'destination_name' => $destinationName,
             'created_at' => $visit->created_at,
+            'allowed_gate_for_enter' => $this->getAllowedGateForEnter($visit),
+            'allowed_gate_for_exit' => $this->getAllowedGateForExit($visit),
         ];
 
         return response()->json([
@@ -236,7 +239,7 @@ class VisitController extends Controller
         }
 
         try {
-            Http::timeout(3)->get($webhookUrl);
+            Http::timeout(1)->get($webhookUrl);
         } catch (\Exception $e) {
             logger()->warning('Tasmota webhook request failed with exception', [
                 'url' => $webhookUrl,
@@ -246,5 +249,31 @@ class VisitController extends Controller
                 'visit_id' => $visit->id,
             ]);
         }
+    }
+
+    private function getAllowedGateForEnter(Visit $visit): array
+    {
+        if (!$visit->destination) {
+            return [];
+        }
+
+        return match ($visit->destination->position) {
+            Position::VILLA1 => [1, 2],
+            Position::VILLA2 => [3],
+            Position::EXCLUSIVE => [4],
+        };
+    }
+
+    private function getAllowedGateForExit(Visit $visit): array
+    {
+        if (!$visit->destination) {
+            return [];
+        }
+
+        return match ($visit->destination->position) {
+            Position::VILLA1 => [1, 2],
+            Position::VILLA2 => [3],
+            Position::EXCLUSIVE => [4],
+        };
     }
 }
