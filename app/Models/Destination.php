@@ -11,6 +11,11 @@ class Destination extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
+    protected $fillable = [
+        'name',
+        'position',
+    ];
+
     protected function casts(): array
     {
         return [
