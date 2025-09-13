@@ -92,7 +92,9 @@ class VisitController extends Controller
     {
         $gateId = $request->input('gate_id');
 
-        $this->callWebhook($gateId, 'in', $visit);
+        if (!$request->boolean('skip_webhook')) {
+            $this->callWebhook($gateId, 'in', $visit);
+        }
 
         if ($visit->checkin_at) {
             return response()->json([
@@ -116,7 +118,9 @@ class VisitController extends Controller
     {
         $gateId = $request->input('gate_id');
 
-        $this->callWebhook($gateId, 'out', $visit);
+        if (!$request->boolean('skip_webhook')) {
+            $this->callWebhook($gateId, 'out', $visit);
+        }
 
         if ($visit->checkout_at) {
             return response()->json([
@@ -140,7 +144,9 @@ class VisitController extends Controller
     {
         $gateId = $request->input('gate_id');
 
-        $this->callWebhook($gateId, 'out', $visit);
+        if (!$request->boolean('skip_webhook')) {
+            $this->callWebhook($gateId, 'out', $visit);
+        }
 
         $visit->current_position = CurrentPosition::getTransitPosition($gateId);
         $visit->save();
@@ -154,7 +160,9 @@ class VisitController extends Controller
     {
         $gateId = $request->input('gate_id');
 
-        $this->callWebhook($gateId, 'in', $visit);
+        if (!$request->boolean('skip_webhook')) {
+            $this->callWebhook($gateId, 'in', $visit);
+        }
 
         $visit->current_position = CurrentPosition::getTransitEnterPosition($gateId);
         $visit->save();

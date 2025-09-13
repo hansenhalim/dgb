@@ -14,7 +14,6 @@ return new class extends Migration {
             $table->smallIncrements('id');
             $table->string('name');
             $table->smallInteger('current_quota');
-            $table->uuid('proximity_id');
             $table->timestamps();
 
             $table->primary('id');
