@@ -73,7 +73,6 @@ class VisitController extends Controller
             'vehicle_plate_number' => $vehiclePlateNumber,
             'purpose_of_visit' => $purposeOfVisit,
             'destination_name' => $destinationName,
-            'created_at' => $visit->created_at,
             'allowed_gate_for_enter' => $this->getAllowedGateForEnter($visit),
             'allowed_gate_for_exit' => $this->getAllowedGateForExit($visit),
         ];

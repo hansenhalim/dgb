@@ -8,7 +8,7 @@ class GateController extends Controller
 {
     public function index()
     {
-        $gates = Gate::select(['id', 'name', 'current_quota', 'proximity_id'])
+        $gates = Gate::select(['id', 'name', 'current_quota'])
             ->oldest('id')
             ->get();
 

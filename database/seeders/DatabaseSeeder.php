@@ -66,26 +66,22 @@ class DatabaseSeeder extends Seeder
 
         Gate::create([
             'name' => 'Gerbang 1',
-            'current_quota' => 300,
-            'proximity_id' => '019813a4-cbd1-7add-a4b8-dc56fb1006b9'
+            'current_quota' => 300
         ]);
 
         Gate::create([
             'name' => 'Gerbang 2',
-            'current_quota' => 150,
-            'proximity_id' => '019813a4-cbd1-7522-abbc-6962dc04621a'
+            'current_quota' => 150
         ]);
 
         Gate::create([
             'name' => 'Gerbang 3',
-            'current_quota' => 100,
-            'proximity_id' => '019813a4-cbd1-7c36-bebe-c7e61a1838ae'
+            'current_quota' => 100
         ]);
 
         Gate::create([
             'name' => 'Gerbang 4',
-            'current_quota' => 0,
-            'proximity_id' => '019813a4-cbd1-7935-b20a-ad4c94578a82'
+            'current_quota' => 0
         ]);
 
         Destination::create([

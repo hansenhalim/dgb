@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Rfids\Pages;
+namespace App\Filament\Resources\Gates\Pages;
 
-use App\Filament\Resources\Rfids\RfidResource;
+use App\Filament\Resources\Gates\GateResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
-class EditRfid extends EditRecord
+class EditGate extends EditRecord
 {
-    protected static string $resource = RfidResource::class;
+    protected static string $resource = GateResource::class;
 
     protected function getHeaderActions(): array
     {
