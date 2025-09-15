@@ -7,4 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Gate extends Model
 {
+    protected $fillable = [
+        'name',
+        'current_quota',
+    ];
 }
