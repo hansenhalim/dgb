@@ -142,4 +142,9 @@ return [
     'gate_4_in_webhook_url' => env('GATE_4_IN_WEBHOOK_URL'),
     'gate_4_out_webhook_url' => env('GATE_4_OUT_WEBHOOK_URL'),
 
+    'gate_1_is_available' => (bool) env('GATE_1_IS_AVAILABLE', true),
+    'gate_2_is_available' => (bool) env('GATE_2_IS_AVAILABLE', true),
+    'gate_3_is_available' => (bool) env('GATE_3_IS_AVAILABLE', true),
+    'gate_4_is_available' => (bool) env('GATE_4_IS_AVAILABLE', true),
+
 ];

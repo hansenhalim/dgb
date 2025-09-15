@@ -10,7 +10,11 @@ class GateController extends Controller
     {
         $gates = Gate::select(['id', 'name', 'current_quota'])
             ->oldest('id')
-            ->get();
+            ->get()
+            ->map(function ($gate) {
+                $gate->is_available = config("app.gate_{$gate->id}_is_available", true);
+                return $gate;
+            });
 
         return response()->json([
             'message' => 'Successfully retrieved available gates.',
