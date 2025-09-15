@@ -67,7 +67,6 @@ class VisitController extends Controller
         ]);
 
         $payload = [
-            'visit_id' => $visit->id,
             'identity_number' => Str::mask($identityNumber, '*', -13, 10),
             'fullname' => $this->maskName($fullname),
             'vehicle_plate_number' => $vehiclePlateNumber,
@@ -75,6 +74,10 @@ class VisitController extends Controller
             'destination_name' => $destinationName,
             'allowed_gate_for_enter' => $this->getAllowedGateForEnter($visit),
             'allowed_gate_for_exit' => $this->getAllowedGateForExit($visit),
+            'visit_id' => $visit->id,
+            'transit_at' => null,
+            'visited_gate_4' => false,
+            'notes' => '',
         ];
 
         return response()->json([
@@ -267,7 +270,7 @@ class VisitController extends Controller
         return match ($visit->destination->position) {
             Position::VILLA1 => [1, 2],
             Position::VILLA2 => [3],
-            Position::EXCLUSIVE => [4],
+            Position::EXCLUSIVE => [3, 4],
         };
     }
 
@@ -278,9 +281,9 @@ class VisitController extends Controller
         }
 
         return match ($visit->destination->position) {
-            Position::VILLA1 => [1, 2],
-            Position::VILLA2 => [3],
-            Position::EXCLUSIVE => [4],
+            Position::VILLA1 => [3],
+            Position::VILLA2 => [2],
+            Position::EXCLUSIVE => [2, 4],
         };
     }
 }
