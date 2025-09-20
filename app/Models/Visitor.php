@@ -10,7 +10,7 @@ class Visitor extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['identity_number'];
+    protected $fillable = ['identity_number', 'banned_at', 'banned_reason'];
 
     public function visits(): HasMany
     {

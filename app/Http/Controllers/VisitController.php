@@ -109,6 +109,11 @@ class VisitController extends Controller
         $visit->current_position = CurrentPosition::getCheckinPosition($gateId);
         $visit->save();
 
+        $visit->visitor->update([
+            'banned_at' => now(),
+            'banned_reason' => "Checked in at gate $gateId",
+        ]);
+
         Gate::where('id', $gateId)->decrement('current_quota');
 
         return response()->json([
@@ -134,6 +139,11 @@ class VisitController extends Controller
         $visit->checkout_gate_id = $gateId;
         $visit->current_position = CurrentPosition::getCheckoutPosition($gateId);
         $visit->save();
+
+        $visit->visitor->update([
+            'banned_at' => null,
+            'banned_reason' => null,
+        ]);
 
         Gate::where('id', $gateId)->increment('current_quota');
 
