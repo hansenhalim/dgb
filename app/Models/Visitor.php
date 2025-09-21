@@ -12,6 +12,13 @@ class Visitor extends Model
 
     protected $fillable = ['identity_number', 'banned_at', 'banned_reason'];
 
+    protected function casts(): array
+    {
+        return [
+            'banned_at' => 'datetime',
+        ];
+    }
+
     public function visits(): HasMany
     {
         return $this->hasMany(Visit::class);

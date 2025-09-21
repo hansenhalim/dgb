@@ -21,11 +21,12 @@ class VisitController extends Controller
 {
     public function index(Visitor $visitor)
     {
-        $visits = $visitor->visits()->latest()->get([
+        $visits = $visitor->visits()->latest()->limit(5)->get([
             'id',
             'vehicle_plate_number',
             'purpose_of_visit',
             'destination_name',
+            'created_at',
         ]);
 
         return response()->json([

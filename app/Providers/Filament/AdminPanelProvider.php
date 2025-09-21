@@ -55,6 +55,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->resourceEditPageRedirect('index')
+            ->readOnlyRelationManagersOnResourceViewPagesByDefault(false);
     }
 }

@@ -18,9 +18,9 @@ class VisitsTable
             ->columns([
                 TextColumn::make('identity_photo')
                     ->label('Photo')
-                    ->formatStateUsing(fn ($state): string => $state ? 'Available' : 'No photo')
+                    ->formatStateUsing(fn($state): string => $state ? 'Available' : 'No photo')
                     ->badge()
-                    ->color(fn ($state): string => $state ? 'success' : 'gray'),
+                    ->color(fn($state): string => $state ? 'success' : 'gray'),
 
                 TextColumn::make('purpose_of_visit')
                     ->label('Purpose')
@@ -35,14 +35,14 @@ class VisitsTable
                 TextColumn::make('current_position')
                     ->label('Current Position')
                     ->badge()
-                    ->color(fn (CurrentPosition $state): string => match ($state) {
+                    ->color(fn(CurrentPosition $state): string => match ($state) {
                         CurrentPosition::OUTSIDE => 'gray',
                         CurrentPosition::VILLA1 => 'success',
                         CurrentPosition::VILLA2 => 'info',
                         CurrentPosition::EXCLUSIVE => 'warning',
                         CurrentPosition::TRANSIT => 'danger',
                     })
-                    ->formatStateUsing(fn (CurrentPosition $state): string => match ($state) {
+                    ->formatStateUsing(fn(CurrentPosition $state): string => match ($state) {
                         CurrentPosition::OUTSIDE => 'Outside',
                         CurrentPosition::VILLA1 => 'Villa 1',
                         CurrentPosition::VILLA2 => 'Villa 2',
@@ -82,7 +82,7 @@ class VisitsTable
                     ->relationship('destination', 'name'),
             ])
             ->recordActions([
-                ViewAction::make(),
+                //
             ])
             ->toolbarActions([
                 ExportAction::make()
