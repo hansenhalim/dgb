@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Visits\Tables;
 use App\Enum\CurrentPosition;
 use App\Filament\Exports\VisitExporter;
 use Filament\Actions\ExportAction;
-use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -16,6 +15,8 @@ class VisitsTable
     {
         return $table
             ->columns([
+                TextColumn::make('id')
+                    ->label('ID'),
                 TextColumn::make('identity_photo')
                     ->label('Photo')
                     ->formatStateUsing(fn($state): string => $state ? 'Available' : 'No photo')

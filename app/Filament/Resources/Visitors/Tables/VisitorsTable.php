@@ -24,7 +24,8 @@ class VisitorsTable
                             return $query->where('identity_number', $hashedSearch);
                         }
                         return $query;
-                    }),
+                    })
+                    ->formatStateUsing(fn() => '****************'),
                 TextColumn::make('banned_at')
                     ->dateTime()
                     ->sortable(),
@@ -47,15 +48,12 @@ class VisitorsTable
                     ->label('Remove Ban')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $record->banned_at !== null)
+                    ->visible(fn($record) => $record->banned_at !== null)
                     ->requiresConfirmation()
                     ->modalHeading('Remove Ban')
                     ->modalDescription('Are you sure you want to remove the ban from this visitor?')
                     ->action(function ($record) {
-                        $record->update([
-                            'banned_at' => null,
-                            'banned_reason' => null,
-                        ]);
+                        $record->update(['banned_at' => null, 'banned_reason' => null]);
 
                         Notification::make()
                             ->title('Ban removed successfully')
