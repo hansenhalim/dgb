@@ -28,7 +28,10 @@ class Rfid extends Model
     protected function uid(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Str::upper(bin2hex(stream_get_contents($value, 4))),
+            get: function ($value) {
+                rewind($value);
+                return Str::upper(bin2hex(stream_get_contents($value, 4)));
+            },
             set: fn($value) => DB::raw("decode('{$value}', 'hex')"),
         );
     }
@@ -36,7 +39,10 @@ class Rfid extends Model
     protected function key(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Str::upper(bin2hex(stream_get_contents($value, 96))),
+            get: function ($value) {
+                rewind($value);
+                return Str::upper(bin2hex(stream_get_contents($value, 96)));
+            },
             set: fn($value) => DB::raw("decode('{$value}', 'hex')"),
         );
     }
