@@ -6,6 +6,7 @@ use App\Enum\CurrentPosition;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Visit extends Model
 {
@@ -53,4 +54,8 @@ class Visit extends Model
         return $this->belongsTo(Gate::class, 'checkout_gate_id');
     }
 
+    public function rfid(): MorphOne
+    {
+        return $this->morphOne(Rfid::class, 'rfidable');
+    }
 }

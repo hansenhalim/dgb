@@ -30,9 +30,10 @@ class Rfid extends Model
         return Attribute::make(
             get: function ($value) {
                 rewind($value);
+
                 return Str::upper(bin2hex(stream_get_contents($value, 4)));
             },
-            set: fn($value) => DB::raw("decode('{$value}', 'hex')"),
+            set: fn ($value) => DB::raw("decode('{$value}', 'hex')"),
         );
     }
 
@@ -41,9 +42,25 @@ class Rfid extends Model
         return Attribute::make(
             get: function ($value) {
                 rewind($value);
+
                 return Str::upper(bin2hex(stream_get_contents($value, 96)));
             },
-            set: fn($value) => DB::raw("decode('{$value}', 'hex')"),
+            set: fn ($value) => DB::raw("decode('{$value}', 'hex')"),
+        );
+    }
+
+    protected function uidNumeric(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $hexUid = $this->uid;
+
+                // Reverse the byte order (swap pairs: DEADBEEF -> EFBEADDE)
+                $swapped = implode('', array_reverse(str_split($hexUid, 2)));
+                $decimal = hexdec($swapped);
+
+                return str_pad((string) $decimal, 10, '0', STR_PAD_LEFT);
+            },
         );
     }
 

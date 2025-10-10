@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
             'pin' => $sharedPin,
         ]);
 
-        $staff->rfids()->save($rfid);
+        $staff->rfid()->save($rfid);
 
         $staff = Staff::create([
             'role' => Role::GUARD,
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
             'pin' => $sharedPin,
         ]);
 
-        $staff->rfids()->save($rfid);
+        $staff->rfid()->save($rfid);
 
         Rfid::create([
             'uid' => 'DEADC0DE',
@@ -66,22 +66,22 @@ class DatabaseSeeder extends Seeder
 
         Gate::create([
             'name' => 'Gerbang 1',
-            'current_quota' => 300
+            'current_quota' => 5,
         ]);
 
         Gate::create([
             'name' => 'Gerbang 2',
-            'current_quota' => 150
+            'current_quota' => 0,
         ]);
 
         Gate::create([
             'name' => 'Gerbang 3',
-            'current_quota' => 100
+            'current_quota' => 0,
         ]);
 
         Gate::create([
             'name' => 'Gerbang 4',
-            'current_quota' => 0
+            'current_quota' => 0,
         ]);
 
         Destination::create([

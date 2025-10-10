@@ -7,6 +7,7 @@ use App\Enum\Position;
 use App\Http\Requests\StoreVisitRequest;
 use App\Models\Gate;
 use App\Models\Rfid;
+use App\Models\Staff;
 use App\Models\Visit;
 use App\Models\Visitor;
 use Illuminate\Http\Request;
@@ -66,6 +67,9 @@ class VisitController extends Controller
             'destination_name' => $destinationName,
             'current_position' => CurrentPosition::OUTSIDE,
         ]);
+
+        $rfid->rfidable()->associate($visit);
+        $rfid->save();
 
         $payload = [
             'identity_number' => Str::mask($identityNumber, '*', -13, 10),
@@ -145,6 +149,9 @@ class VisitController extends Controller
             'banned_at' => null,
             'banned_reason' => null,
         ]);
+
+        $visit->rfid?->rfidable()->dissociate();
+        $visit->rfid?->save();
 
         Gate::where('id', $gateId)->increment('current_quota');
 
