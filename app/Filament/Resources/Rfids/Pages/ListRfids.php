@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Rfids\Pages;
 
 use App\Filament\Resources\Rfids\RfidResource;
-use Filament\Actions\CreateAction;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 
 class ListRfids extends ListRecords
@@ -13,7 +13,9 @@ class ListRfids extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            Action::make('enroll')
+                ->label('Enroll')
+                ->url(fn (): string => RfidResource::getUrl('enroll')),
         ];
     }
 }

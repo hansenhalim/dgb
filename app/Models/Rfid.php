@@ -55,7 +55,6 @@ class Rfid extends Model
             get: function () {
                 $hexUid = $this->uid;
 
-                // Reverse the byte order (swap pairs: DEADBEEF -> EFBEADDE)
                 $swapped = implode('', array_reverse(str_split($hexUid, 2)));
                 $decimal = hexdec($swapped);
 

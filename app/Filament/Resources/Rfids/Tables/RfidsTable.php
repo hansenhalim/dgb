@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Rfids\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -28,13 +26,13 @@ class RfidsTable
                     ->label('Linked To')
                     ->placeholder('Not Linked')
                     ->badge()
-                    ->color(fn($record) => match ($record?->rfidable_type) {
+                    ->color(fn ($record) => match ($record?->rfidable_type) {
                         'App\\Models\\Visit' => 'success',
                         'App\\Models\\Staff' => 'info',
                         default => 'gray',
                     })
                     ->formatStateUsing(function ($record) {
-                        if (!$record->rfidable) {
+                        if (! $record->rfidable) {
                             return null;
                         }
 
@@ -69,9 +67,7 @@ class RfidsTable
                 EditAction::make(),
             ])
             ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                //
             ]);
     }
 }

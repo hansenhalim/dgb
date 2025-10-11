@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder
 
         Gate::create([
             'name' => 'Gerbang 1',
-            'current_quota' => 5,
+            'current_quota' => 3,
         ]);
 
         Gate::create([

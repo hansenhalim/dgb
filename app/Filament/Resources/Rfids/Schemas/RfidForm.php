@@ -14,15 +14,6 @@ class RfidForm
     {
         return $schema
             ->components([
-                TextInput::make('uid_numeric')
-                    ->label('UID')
-                    ->disabled(),
-                TextInput::make('pin')
-                    ->password()
-                    ->numeric()
-                    ->length(6)
-                    ->dehydrated(fn(?string $state): bool => filled($state))
-                    ->formatStateUsing(fn(): string => ''),
                 MorphToSelect::make('rfidable')
                     ->label('Linked To')
                     ->types([
@@ -33,6 +24,12 @@ class RfidForm
                     ])
                     ->searchable()
                     ->preload(),
+                TextInput::make('pin')
+                    ->password()
+                    ->numeric()
+                    ->length(6)
+                    ->dehydrated(fn (?string $state): bool => filled($state))
+                    ->formatStateUsing(fn (): string => ''),
             ]);
     }
 }

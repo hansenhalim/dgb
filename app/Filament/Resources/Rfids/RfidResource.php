@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Rfids;
 
 use App\Filament\Resources\Rfids\Pages\EditRfid;
+use App\Filament\Resources\Rfids\Pages\EnrollRfid;
 use App\Filament\Resources\Rfids\Pages\ListRfids;
 use App\Filament\Resources\Rfids\Schemas\RfidForm;
 use App\Filament\Resources\Rfids\Tables\RfidsTable;
@@ -45,6 +46,7 @@ class RfidResource extends Resource
         return [
             'index' => ListRfids::route('/'),
             'edit' => EditRfid::route('/{record}/edit'),
+            'enroll' => EnrollRfid::route('/enroll'),
         ];
     }
 }
