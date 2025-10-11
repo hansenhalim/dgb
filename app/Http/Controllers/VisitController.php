@@ -48,7 +48,7 @@ class VisitController extends Controller
 
         $rfid = Rfid::whereUid($uid)->first();
 
-        if (!$rfid || $rfid->rfidable instanceof Staff) {
+        if (! $rfid || $rfid->rfidable instanceof Staff) {
             return response()->json([
                 'message' => 'RFID not found or assigned to staff.',
             ], Response::HTTP_NOT_FOUND);
@@ -95,12 +95,19 @@ class VisitController extends Controller
         ]);
     }
 
-    public function checkin(Request $request, Visit $visit)
+    public function checkin(Request $request, $visitId)
     {
+        $visit = Visit::find($visitId);
         $gateId = $request->input('gate_id');
 
-        if (!$request->boolean('skip_webhook')) {
+        if (! $request->boolean('skip_webhook')) {
             $this->callWebhook($gateId, 'in', $visit);
+        }
+
+        if (! $visit) {
+            return response()->json([
+                'message' => 'Gate opened successfully',
+            ]);
         }
 
         if ($visit->checkin_at) {
@@ -126,12 +133,19 @@ class VisitController extends Controller
         ]);
     }
 
-    public function checkout(Request $request, Visit $visit)
+    public function checkout(Request $request, $visitId)
     {
+        $visit = Visit::find($visitId);
         $gateId = $request->input('gate_id');
 
-        if (!$request->boolean('skip_webhook')) {
+        if (! $request->boolean('skip_webhook')) {
             $this->callWebhook($gateId, 'out', $visit);
+        }
+
+        if (! $visit) {
+            return response()->json([
+                'message' => 'Gate opened successfully',
+            ]);
         }
 
         if ($visit->checkout_at) {
@@ -160,12 +174,19 @@ class VisitController extends Controller
         ]);
     }
 
-    public function transit(Request $request, Visit $visit)
+    public function transit(Request $request, $visitId)
     {
+        $visit = Visit::find($visitId);
         $gateId = $request->input('gate_id');
 
-        if (!$request->boolean('skip_webhook')) {
+        if (! $request->boolean('skip_webhook')) {
             $this->callWebhook($gateId, 'out', $visit);
+        }
+
+        if (! $visit) {
+            return response()->json([
+                'message' => 'Gate opened successfully',
+            ]);
         }
 
         $visit->current_position = CurrentPosition::getTransitPosition($gateId);
@@ -176,12 +197,19 @@ class VisitController extends Controller
         ]);
     }
 
-    public function transitEnter(Request $request, Visit $visit)
+    public function transitEnter(Request $request, $visitId)
     {
+        $visit = Visit::find($visitId);
         $gateId = $request->input('gate_id');
 
-        if (!$request->boolean('skip_webhook')) {
+        if (! $request->boolean('skip_webhook')) {
             $this->callWebhook($gateId, 'in', $visit);
+        }
+
+        if (! $visit) {
+            return response()->json([
+                'message' => 'Gate opened successfully',
+            ]);
         }
 
         $visit->current_position = CurrentPosition::getTransitEnterPosition($gateId);
@@ -196,7 +224,7 @@ class VisitController extends Controller
     {
         $gateId = $request->input('gate_id');
 
-        if (!$gateId) {
+        if (! $gateId) {
             return response()->json([
                 'message' => 'Gate ID is required',
             ], Response::HTTP_BAD_REQUEST);
@@ -207,7 +235,7 @@ class VisitController extends Controller
                 ->orWhere('checkout_gate_id', $gateId);
         });
 
-        $visits = $query->limit(5)->get()->map(fn($visit) => [
+        $visits = $query->limit(5)->get()->map(fn ($visit) => [
             'id' => $visit->id,
             'vehicle_plate_number' => $visit->vehicle_plate_number,
             'current_position' => $visit->current_position->formatName(),
@@ -239,30 +267,30 @@ class VisitController extends Controller
 
             if ($length <= 2) {
                 // Mask all but first letter
-                return Str::substr($word, 0, 1) . str_repeat('*', $length - 1);
+                return Str::substr($word, 0, 1).str_repeat('*', $length - 1);
             }
 
             if ($length <= 4) {
                 // Keep first and last letters
-                return Str::substr($word, 0, 1) .
-                    str_repeat('*', $length - 2) .
+                return Str::substr($word, 0, 1).
+                    str_repeat('*', $length - 2).
                     Str::substr($word, -1);
             }
 
             // Keep first 2 and last 1 characters
-            return Str::substr($word, 0, 2) .
-                str_repeat('*', $length - 3) .
+            return Str::substr($word, 0, 2).
+                str_repeat('*', $length - 3).
                 Str::substr($word, -1);
         }, $words);
 
         return implode(' ', $maskedWords);
     }
 
-    private function callWebhook(int $gateId, string $direction, Visit $visit): void
+    private function callWebhook(int $gateId, string $direction, ?Visit $visit): void
     {
         $webhookUrl = config("app.gate_{$gateId}_{$direction}_webhook_url");
 
-        if (!$webhookUrl) {
+        if (! $webhookUrl) {
             return;
         }
 
@@ -274,14 +302,14 @@ class VisitController extends Controller
                 'error' => $e->getMessage(),
                 'gate_id' => $gateId,
                 'direction' => $direction,
-                'visit_id' => $visit->id,
+                'visit_id' => $visit?->id,
             ]);
         }
     }
 
     private function getAllowedGateForEnter(Visit $visit): array
     {
-        if (!$visit->destination) {
+        if (! $visit->destination) {
             return [];
         }
 
@@ -294,14 +322,14 @@ class VisitController extends Controller
 
     private function getAllowedGateForExit(Visit $visit): array
     {
-        if (!$visit->destination) {
+        if (! $visit->destination) {
             return [];
         }
 
         return match ($visit->destination->position) {
-            Position::VILLA1 => [3],
-            Position::VILLA2 => [2],
-            Position::EXCLUSIVE => [2, 4],
+            Position::VILLA1 => [1, 2],
+            Position::VILLA2 => [3],
+            Position::EXCLUSIVE => [3, 4],
         };
     }
 }
