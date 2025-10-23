@@ -22,9 +22,7 @@ class EnrollRfid extends Page implements HasForms
 
     public ?array $data = [];
 
-    public ?string $enrolledUid = null;
-
-    public ?string $enrolledKey = null;
+    public ?array $lastEnrolledCard = null;
 
     public function form(Schema $schema): Schema
     {
@@ -39,46 +37,43 @@ class EnrollRfid extends Page implements HasForms
             ->action(fn() => $this->dispatch('start-rfid-enrollment'));
     }
 
-    public function setEnrollmentData(string $uid, string $key): void
+    public function handleEnrollmentComplete(string $uid): void
     {
-        $this->enrolledUid = strtoupper($uid);
-        $this->enrolledKey = strtoupper($key);
+        $uid = strtoupper($uid);
 
-        Notification::make()
-            ->title('RFID Card Detected')
-            ->body("UID: {$this->enrolledUid}")
-            ->success()
-            ->send();
-    }
+        // Check if this UID already exists
+        $existingRfid = Rfid::where('uid', $uid)->first();
 
-    public function create(): void
-    {
-        if (!$this->enrolledUid || !$this->enrolledKey) {
+        if ($existingRfid) {
             Notification::make()
-                ->title('No RFID Data')
-                ->body('Please enroll an RFID card first.')
-                ->danger()
+                ->title('Card Already Enrolled')
+                ->body("This card (UID: {$uid}) is already enrolled in the system.")
+                ->warning()
                 ->send();
 
             return;
         }
 
-        $data = $this->form->getState();
-
+        // Create new RFID with just the UID
         $rfid = Rfid::create([
-            'uid' => $this->enrolledUid,
-            'key' => $this->enrolledKey,
-            'pin' => $data['pin'] ?? null,
-            'rfidable_type' => $data['rfidable_type'] ?? null,
-            'rfidable_id' => $data['rfidable_id'] ?? null,
+            'uid' => $uid,
+            'key' => str_repeat('C0FFEEC0FFEE', 16),
         ]);
 
+        // Refresh to get the actual stored values from database
+        $rfid->refresh();
+
+        // Store the enrolled card info to display on the page
+        $this->lastEnrolledCard = [
+            'uid' => $rfid->uid,
+            'uid_numeric' => $rfid->uid_numeric,
+            'enrolled_at' => now()->timezone('Asia/Jakarta')->format('H:i:s'),
+        ];
+
         Notification::make()
-            ->title('RFID Created')
-            ->body('RFID card has been successfully enrolled.')
+            ->title('Card Enrolled Successfully')
+            ->body("UID: {$uid} has been saved to the database. You can now enroll another card.")
             ->success()
             ->send();
-
-        $this->redirect(RfidResource::getUrl('edit', ['record' => $rfid]));
     }
 }

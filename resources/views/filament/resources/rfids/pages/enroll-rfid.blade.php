@@ -1,37 +1,41 @@
 <x-filament-panels::page>
     <div x-data="rfidEnrollment">
-        @if($enrolledUid)
+        @if($lastEnrolledCard)
             <x-filament::section>
                 <x-slot name="heading">
-                    Enrolled RFID Card
+                    <div class="flex items-center justify-between">
+                        <span>Last Enrolled Card</span>
+                        <span class="text-xs font-normal text-gray-500 dark:text-gray-400">
+                            {{ $lastEnrolledCard['enrolled_at'] }}
+                        </span>
+                    </div>
                 </x-slot>
 
-                <div class="space-y-4">
-                    <div>
-                        <strong class="text-sm">UID:</strong>
-                        <code class="ml-2 rounded bg-gray-100 px-2 py-1 text-sm dark:bg-gray-800">{{ $enrolledUid }}</code>
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <!-- Numeric UID - Large and prominent -->
+                    <div style="background-color: #dcfce7; border-radius: 0.75rem; padding: 2rem;">
+                        <div style="font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #15803d; margin-bottom: 1rem;">
+                            NUMERIC UID
+                        </div>
+                        <div style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 3.75rem; font-weight: 900; line-height: 1.2; letter-spacing: 0.05em; color: #14532d;">
+                            {{ $lastEnrolledCard['uid_numeric'] }}
+                        </div>
                     </div>
+
+                    <!-- Hex UID - Secondary display -->
                     <div>
-                        <strong class="text-sm">Key:</strong>
-                        <code
-                            class="ml-2 rounded bg-gray-100 px-2 py-1 text-xs dark:bg-gray-800">{{ Str::limit($enrolledKey, 32) }}...</code>
+                        <div style="font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4b5563; margin-bottom: 0.75rem;">
+                            HEX UID
+                        </div>
+                        <code style="display: block; background-color: #e5e7eb; border-radius: 0.75rem; padding: 1rem 1.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.1em; color: #111827;">{{ $lastEnrolledCard['uid'] }}</code>
                     </div>
                 </div>
             </x-filament::section>
         @endif
 
-        <form wire:submit="create">
-
-            <div class="mt-6 flex gap-3">
-                {{ $this->enrollAction }}
-
-                @if($enrolledUid)
-                    <x-filament::button type="submit">
-                        Save RFID
-                    </x-filament::button>
-                @endif
-            </div>
-        </form>
+        <div class="mt-6">
+            {{ $this->enrollAction }}
+        </div>
     </div>
 
     @script
@@ -63,28 +67,33 @@
                         return;
                     }
 
-
                     const usbVendorId = 0x303a;
 
-                    // Request port
-                    port = await navigator.serial.requestPort({ filters: [{ usbVendorId }] });
+                    // Request port (reuse if already open)
+                    if (!port) {
+                        port = await navigator.serial.requestPort({ filters: [{ usbVendorId }] });
+                    }
 
-                    // Open port with appropriate settings
-                    await port.open({
-                        baudRate: 115200,
-                        dataBits: 8,
-                        stopBits: 1,
-                        parity: 'none'
-                    });
+                    // Only open if not already open
+                    if (!port.readable) {
+                        await port.open({
+                            baudRate: 115200,
+                            dataBits: 8,
+                            stopBits: 1,
+                            parity: 'none'
+                        });
+                    }
 
-                    // Get reader and writer
-                    const textDecoder = new TextDecoderStream();
-                    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
-                    reader = textDecoder.readable.getReader();
+                    // Get reader and writer (only if not already created)
+                    if (!reader || !writer) {
+                        const textDecoder = new TextDecoderStream();
+                        const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                        reader = textDecoder.readable.getReader();
 
-                    const textEncoder = new TextEncoderStream();
-                    const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
-                    writer = textEncoder.writable.getWriter();
+                        const textEncoder = new TextEncoderStream();
+                        const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+                        writer = textEncoder.writable.getWriter();
+                    }
 
                     // Show loading notification
                     new FilamentNotification()
@@ -93,9 +102,8 @@
                         .info()
                         .send();
 
-                    // Send enrollment command
-                    const enrollCommand = 'ENROLL C0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEE\n';
-                    await writer.write(enrollCommand);
+                    // First, scan the UID
+                    await writer.write('SCAN_UID\n');
 
                     // Read response
                     let response = '';
@@ -129,39 +137,72 @@
 
                     response = await readPromise;
 
-                    // Parse response - expecting format like "OK ENROLL_DONE"
-                    if (response.includes('OK ENROLL_DONE')) {
-                        // Success - show notification and let Livewire handle the rest
+                    // Parse UID from SCAN_UID response - expecting "OK UID <hex_uid>"
+                    const uidMatch = response.match(/OK UID ([0-9A-Fa-f]+)/);
+
+                    if (uidMatch) {
+                        const uid = uidMatch[1].toUpperCase();
+
+                        // Show progress
                         new FilamentNotification()
-                            .title('RFID Card Enrolled')
-                            .body('The RFID card has been successfully enrolled.')
-                            .success()
+                            .title('Card Detected')
+                            .body(`UID: ${uid}. Enrolling card...`)
+                            .info()
                             .send();
 
-                        // Trigger Livewire to refresh or handle enrollment completion
-                        $wire.call('handleEnrollmentComplete');
-                    } else {
-                        // Try legacy format with UID and KEY
-                        const uidMatch = response.match(/UID:([0-9A-Fa-f]+)/);
-                        const keyMatch = response.match(/KEY:([0-9A-Fa-f]+)/);
+                        // Now enroll the card with the authentication key
+                        const enrollCommand = 'ENROLL C0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEE\n';
+                        await writer.write(enrollCommand);
 
-                        if (uidMatch && keyMatch) {
-                            const uid = uidMatch[1].toUpperCase();
-                            const key = keyMatch[1].toUpperCase();
+                        // Read enrollment response
+                        response = '';
+                        const enrollReadPromise = new Promise(async (resolve, reject) => {
+                            const enrollTimeoutId = setTimeout(() => {
+                                reject(new Error('Timeout waiting for enrollment response'));
+                            }, 30000); // 30 second timeout
 
-                            // Send data to Livewire
-                            $wire.call('setEnrollmentData', uid, key);
+                            try {
+                                while (true) {
+                                    const { value, done } = await reader.read();
+                                    if (done) {
+                                        break;
+                                    }
+                                    response += value;
+
+                                    // Check if we have a complete response
+                                    if (response.includes('\n') || response.includes('OK') || response.includes('ERR')) {
+                                        clearTimeout(enrollTimeoutId);
+                                        resolve(response);
+                                        break;
+                                    }
+                                }
+                            } catch (error) {
+                                clearTimeout(enrollTimeoutId);
+                                reject(error);
+                            }
+                        });
+
+                        response = await enrollReadPromise;
+
+                        // Check if enrollment succeeded
+                        if (response.includes('OK ENROLL_DONE')) {
+                            // Send UID to Livewire to save to database
+                            $wire.call('handleEnrollmentComplete', uid);
                         } else {
-                            this.showError('Failed to parse RFID response: ' + response);
+                            this.showError('Enrollment failed: ' + response);
                         }
+                    } else if (response.includes('ERR NO_TAG')) {
+                        this.showError('No RFID card detected. Please present a card and try again.');
+                    } else {
+                        this.showError('Failed to scan RFID card: ' + response);
                     }
 
-                    // Close connection
-                    await this.closeConnection();
+                    // Don't close connection - keep it open for next enrollment
 
                 } catch (error) {
                     console.error('RFID Enrollment Error:', error);
                     this.showError('Error during RFID enrollment: ' + error.message);
+                    // On error, close everything
                     await this.closeConnection();
                 } finally {
                     this.isEnrolling = false;
@@ -193,7 +234,7 @@
                     .body(message)
                     .danger()
                     .send();
-            }
+            },
         }));
     </script>
     @endscript
