@@ -32,7 +32,7 @@ class EnrollRfid extends Page implements HasForms
     public function enrollAction(): Action
     {
         return Action::make('enroll')
-            ->label('Start Enrollment')
+            ->label('Start Enrollment (e)')
             ->color('primary')
             ->action(fn() => $this->dispatch('start-rfid-enrollment'));
     }
