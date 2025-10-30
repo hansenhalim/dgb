@@ -184,23 +184,42 @@
                         // Show progress
                         new FilamentNotification()
                             .title('Card Detected')
-                            .body(`UID: ${uid}. Enrolling card...`)
+                            .body(`UID: ${uid}. Checking database...`)
                             .info()
                             .send();
 
-                        // Now enroll the card with the authentication key
-                        const enrollCommand = 'ENROLL C0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEE\n';
-                        await writer.write(enrollCommand);
+                        // Check if UID already exists in database
+                        const uidExists = await $wire.call('checkUidExists', uid);
 
-                        // Read enrollment response
-                        response = await readResponse();
-
-                        // Check if enrollment succeeded
-                        if (response.includes('OK ENROLL_DONE')) {
-                            // Send UID to Livewire to save to database
-                            $wire.call('handleEnrollmentComplete', uid);
+                        if (uidExists) {
+                            // Card already enrolled, skip enrollment process
+                            new FilamentNotification()
+                                .title('Card Already Enrolled')
+                                .body(`This card (UID: ${uid}) is already enrolled in the system.`)
+                                .warning()
+                                .send();
                         } else {
-                            this.showError('Enrollment failed: ' + response);
+                            // Card not enrolled, proceed with enrollment
+                            new FilamentNotification()
+                                .title('Enrolling Card')
+                                .body(`UID: ${uid}. Writing authentication key...`)
+                                .info()
+                                .send();
+
+                            // Now enroll the card with the authentication key
+                            const enrollCommand = 'ENROLL C0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEEC0FFEE\n';
+                            await writer.write(enrollCommand);
+
+                            // Read enrollment response
+                            response = await readResponse();
+
+                            // Check if enrollment succeeded
+                            if (response.includes('OK ENROLL_DONE')) {
+                                // Send UID to Livewire to save to database
+                                $wire.call('handleEnrollmentComplete', uid);
+                            } else {
+                                this.showError('Enrollment failed: ' + response);
+                            }
                         }
                     } else if (response.includes('ERR NO_TAG')) {
                         this.showError('No RFID card detected. Please present a card and try again.');

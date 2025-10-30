@@ -37,22 +37,14 @@ class EnrollRfid extends Page implements HasForms
             ->action(fn() => $this->dispatch('start-rfid-enrollment'));
     }
 
+    public function checkUidExists(string $uid): bool
+    {
+        return Rfid::whereUid($uid)->exists();
+    }
+
     public function handleEnrollmentComplete(string $uid): void
     {
         $uid = strtoupper($uid);
-
-        // Check if this UID already exists
-        $existingRfid = Rfid::where('uid', $uid)->first();
-
-        if ($existingRfid) {
-            Notification::make()
-                ->title('Card Already Enrolled')
-                ->body("This card (UID: {$uid}) is already enrolled in the system.")
-                ->warning()
-                ->send();
-
-            return;
-        }
 
         // Create new RFID with just the UID
         $rfid = Rfid::create([
