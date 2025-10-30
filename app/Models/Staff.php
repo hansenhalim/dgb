@@ -13,6 +13,8 @@ class Staff extends Authenticatable
 {
     use HasApiTokens, HasUuids;
 
+    protected $fillable = ['role', 'name', 'secret_key'];
+
     protected function casts(): array
     {
         return [

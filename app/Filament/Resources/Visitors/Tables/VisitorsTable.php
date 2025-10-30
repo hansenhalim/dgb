@@ -14,18 +14,20 @@ class VisitorsTable
     {
         return $table
             ->columns([
-                TextColumn::make('id')
-                    ->label('ID'),
+                // TextColumn::make('id')
+                //     ->label('ID'),
                 TextColumn::make('identity_number')
                     ->label('Identity Number')
                     ->searchable(query: function ($query, $search) {
                         if (strlen($search) === 16 && ctype_digit($search)) {
                             $hashedSearch = Str::of($search)->hash('sha256');
+
                             return $query->where('identity_number', $hashedSearch);
                         }
+
                         return $query;
                     })
-                    ->formatStateUsing(fn() => '****************'),
+                    ->formatStateUsing(fn () => '****************'),
                 TextColumn::make('banned_at')
                     ->dateTime()
                     ->sortable(),
@@ -48,7 +50,7 @@ class VisitorsTable
                     ->label('Remove Ban')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn($record) => $record->banned_at !== null)
+                    ->visible(fn ($record) => $record->banned_at !== null)
                     ->requiresConfirmation()
                     ->modalHeading('Remove Ban')
                     ->modalDescription('Are you sure you want to remove the ban from this visitor?')
