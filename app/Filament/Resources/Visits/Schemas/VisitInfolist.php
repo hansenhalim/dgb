@@ -48,9 +48,19 @@ class VisitInfolist
 
                         TextEntry::make('identity_photo')
                             ->label('Identity Photo')
-                            ->formatStateUsing(fn ($state): string => $state ? 'Photo available (binary data)' : 'No photo uploaded')
+                            ->formatStateUsing(fn () => 'Click to view photo')
                             ->badge()
-                            ->color(fn ($state): string => $state ? 'success' : 'gray'),
+                            ->color('success')
+                            ->action(
+                                \Filament\Actions\Action::make('viewPhoto')
+                                    ->modalHeading('Identity Photo')
+                                    ->modalContent(fn ($record) => view('filament.modals.identity-photo-viewer', [
+                                        'photoUrl' => $record->getDecryptedIdentityPhotoUrl(),
+                                    ]))
+                                    ->modalSubmitAction(false)
+                                    ->modalCancelActionLabel('Close')
+                                    ->slideOver()
+                            ),
                     ]),
 
                 Section::make('Check-in/Check-out Details')

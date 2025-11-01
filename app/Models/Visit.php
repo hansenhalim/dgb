@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 class Visit extends Model
 {
@@ -57,5 +59,60 @@ class Visit extends Model
     public function rfid(): MorphOne
     {
         return $this->morphOne(Rfid::class, 'rfidable');
+    }
+
+    public function getDecryptedIdentityPhotoUrl(): ?string
+    {
+        if (! $this->identity_photo) {
+            return null;
+        }
+
+        $context = $this->buildAuditContext();
+
+        Log::info('Identity photo decryption attempted', $context);
+
+        try {
+            $encryptedData = $this->identity_photo;
+            $encryptedData = stream_get_contents($encryptedData);
+            $decrypted = Crypt::decrypt($encryptedData);
+            $base64 = base64_encode($decrypted);
+
+            Log::info('Identity photo decryption successful', array_merge($context, [
+                'data_size_bytes' => strlen($decrypted),
+            ]));
+
+            return "data:image/jpeg;base64,{$base64}";
+        } catch (\Exception $e) {
+            Log::error('Identity photo decryption failed', array_merge($context, [
+                'error_message' => $e->getMessage(),
+                'error_type' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ]));
+
+            return null;
+        }
+    }
+
+    protected function buildAuditContext(): array
+    {
+        $context = [
+            'visit_id' => $this->id,
+            'visitor_id' => $this->visitor_id,
+            'checkin_at' => $this->checkin_at?->toIso8601String(),
+            'current_position' => $this->current_position?->value,
+        ];
+
+        if (auth()->check()) {
+            $context['authenticated_user_id'] = auth()->id();
+            $context['authenticated_user_email'] = auth()->user()?->email;
+        }
+
+        if (request()) {
+            $context['ip_address'] = request()->ip();
+            $context['user_agent'] = request()->userAgent();
+            $context['request_url'] = request()->fullUrl();
+        }
+
+        return $context;
     }
 }
