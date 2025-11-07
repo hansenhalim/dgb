@@ -26,8 +26,8 @@ class RfidForm
                     ->preload(),
                 TextInput::make('pin')
                     ->password()
-                    ->numeric()
                     ->length(6)
+                    ->regex('/^\d{6}$/')
                     ->dehydrated(fn (?string $state): bool => filled($state))
                     ->formatStateUsing(fn (): string => ''),
             ]);
