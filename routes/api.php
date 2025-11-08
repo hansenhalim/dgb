@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\GateController;
+use App\Http\Controllers\NikOcrController;
 use App\Http\Controllers\RfidController;
 use App\Http\Controllers\TransferRequestController;
 use App\Http\Controllers\VersionController;
@@ -30,4 +31,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/visits/{visit}/checkout', [VisitController::class, 'checkout']);
     Route::post('/visits/{visit}/transit', [VisitController::class, 'transit']);
     Route::post('/visits/{visit}/transit-enter', [VisitController::class, 'transitEnter']);
+    Route::post('/img-to-nik', [NikOcrController::class, 'extractNik']);
 });
