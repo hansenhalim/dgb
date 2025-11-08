@@ -27,21 +27,19 @@ class NikOcrController extends Controller
 
             $im = new Imagick($imagePath);
 
-            // Scale image to 300 DPI for better OCR accuracy
-            $this->scaleImageToDpi($im, 300);
+            $im->gaussianBlurImage(0, 1.0);
 
-            // Calculate Otsu's threshold
             $threshold = $this->calculateOtsuThreshold($im);
 
-            // Apply threshold
             $im->thresholdImage($threshold * Imagick::getQuantum());
             $im->stripImage();
 
-            // Set image format to JPG with high quality
             $im->setImageFormat('jpg');
             $im->setImageCompressionQuality(95);
 
-            $processedImagePath = storage_path('app/private/processed_'.uniqid('nik_', true).'.jpg');
+            $timestamp = now()->format('Y-m-d_H-i-s');
+            $randomId = substr(md5(uniqid()), 0, 8);
+            $processedImagePath = storage_path("app/private/nik_ocr_{$timestamp}_{$randomId}.jpg");
             $im->writeImage($processedImagePath);
 
             $tessdataPath = resource_path('tessdata');
@@ -51,12 +49,26 @@ class NikOcrController extends Controller
                 ->lang('nik')
                 ->run();
 
-            $trimmedNik = trim($nik);
+            // Remove all non-digit characters (spaces, dashes, etc.)
+            $cleanedNik = preg_replace('/\D/', '', $nik);
+
+            $validationResult = $this->validateNik($cleanedNik);
+
+            if (! $validationResult['valid']) {
+                return response()->json([
+                    'message' => 'Failed to extract valid NIK',
+                    'data' => [
+                        'nik' => null,
+                        'extracted_text' => $cleanedNik,
+                        'validation_errors' => $validationResult['errors'],
+                    ],
+                ], 422);
+            }
 
             return response()->json([
-                'message' => $trimmedNik ? 'NIK extracted successfully' : 'No text found in image',
+                'message' => 'NIK extracted successfully',
                 'data' => [
-                    'nik' => $trimmedNik,
+                    'nik' => $cleanedNik,
                 ],
             ]);
         } catch (\Exception $e) {
@@ -65,41 +77,34 @@ class NikOcrController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         } finally {
-            if ($processedImagePath && file_exists($processedImagePath)) {
-                // unlink($processedImagePath);
+            if ($processedImagePath && file_exists($processedImagePath) && ! config('app.debug')) {
+                unlink($processedImagePath);
             }
         }
     }
 
     private function calculateOtsuThreshold(Imagick $image): float
     {
-        // Convert to grayscale
         $image->transformImageColorspace(Imagick::COLORSPACE_GRAY);
 
-        // Get image dimensions
         $width = $image->getImageWidth();
         $height = $image->getImageHeight();
         $totalPixels = $width * $height;
 
-        // Get pixel iterator
         $pixelIterator = $image->getPixelIterator();
 
-        // Build histogram
         $histogram = array_fill(0, 256, 0);
 
         foreach ($pixelIterator as $pixels) {
             foreach ($pixels as $pixel) {
                 $color = $pixel->getColor();
-                $gray = (int) $color['r']; // Since it's grayscale, r=g=b
-
-                // Ensure gray value is within valid range (0-255)
+                $gray = (int) $color['r'];
                 $gray = max(0, min(255, $gray));
 
                 $histogram[$gray]++;
             }
         }
 
-        // Calculate Otsu's threshold
         $sum = 0;
         for ($i = 0; $i < 256; $i++) {
             $sum += $i * $histogram[$i];
@@ -135,38 +140,69 @@ class NikOcrController extends Controller
             }
         }
 
-        // Return normalized threshold (0-1 range)
         return $threshold / 255;
     }
 
-    private function scaleImageToDpi(Imagick $image, int $targetDpi): void
+    private function validateNik(string $nik): array
     {
-        // Get current image resolution
-        $resolution = $image->getImageResolution();
-        $currentDpi = $resolution['x']; // Assuming x and y are the same
+        $errors = [];
+        $info = [];
 
-        // Handle images without DPI information (set default to 72 DPI)
-        if ($currentDpi <= 0) {
-            $currentDpi = 72;
+        if (strlen($nik) !== 16) {
+            $errors[] = 'NIK must be exactly 16 digits';
+
+            return ['valid' => false, 'errors' => $errors, 'info' => $info];
         }
 
-        // Calculate scaling factor
-        $scaleFactor = $targetDpi / $currentDpi;
+        $kodeWilayah = substr($nik, 0, 6);
+        $tanggal = substr($nik, 6, 2);
+        $bulan = substr($nik, 8, 2);
+        $tahun = substr($nik, 10, 2);
+        $serial = substr($nik, 12, 4);
 
-        // Only scale if needed (avoid unnecessary processing)
-        if (abs($scaleFactor - 1.0) > 0.01) {
-            $width = $image->getImageWidth();
-            $height = $image->getImageHeight();
+        $kodeWilayahData = json_decode(file_get_contents(public_path('kodewilayah.json')), true);
 
-            $newWidth = (int) round($width * $scaleFactor);
-            $newHeight = (int) round($height * $scaleFactor);
-
-            // Resize image using Lanczos filter for best quality
-            $image->resizeImage($newWidth, $newHeight, Imagick::FILTER_LANCZOS, 1);
+        if (! isset($kodeWilayahData[$kodeWilayah])) {
+            $errors[] = "Invalid region code: {$kodeWilayah}";
+        } else {
+            $info['region'] = $kodeWilayahData[$kodeWilayah];
         }
 
-        // Set the image resolution to target DPI
-        $image->setImageResolution($targetDpi, $targetDpi);
-        $image->setImageUnits(Imagick::RESOLUTION_PIXELSPERINCH);
+        $day = (int) $tanggal;
+        $isFemale = false;
+
+        if ($day > 40) {
+            $day -= 40;
+            $isFemale = true;
+        }
+
+        $month = (int) $bulan;
+        $year = (int) $tahun;
+
+        $currentYear = (int) date('y');
+        $fullYear = ($year <= $currentYear) ? 2000 + $year : 1900 + $year;
+
+        if ($day < 1 || $day > 31) {
+            $errors[] = "Invalid day: {$day}";
+        }
+
+        if ($month < 1 || $month > 12) {
+            $errors[] = "Invalid month: {$month}";
+        }
+
+        if ($day >= 1 && $day <= 31 && $month >= 1 && $month <= 12) {
+            if (! checkdate($month, $day, $fullYear)) {
+                $errors[] = "Invalid date: {$day}-{$month}-{$fullYear}";
+            } else {
+                $info['birth_date'] = sprintf('%04d-%02d-%02d', $fullYear, $month, $day);
+                $info['gender'] = $isFemale ? 'Female' : 'Male';
+            }
+        }
+
+        return [
+            'valid' => empty($errors),
+            'errors' => $errors,
+            'info' => $info,
+        ];
     }
 }
