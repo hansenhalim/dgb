@@ -8,12 +8,17 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     libpq-dev \
     libzip-dev \
+    libmagickwand-dev \
+    tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install -j$(nproc) \
     intl \
     pdo_pgsql \
     zip
+
+RUN pecl install imagick \
+    && docker-php-ext-enable imagick
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
