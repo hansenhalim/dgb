@@ -20,10 +20,16 @@ class NikOcrController extends Controller
         ]);
 
         $processedImagePath = null;
+        $rawImagePath = null;
 
         try {
             $image = $request->file('image');
             $imagePath = $image->getRealPath();
+
+            $timestamp = now()->format('Y-m-d_H-i-s');
+
+            $rawImagePath = storage_path("app/private/Img2NIK_{$timestamp}_0000000000000000.{$image->getClientOriginalExtension()}");
+            copy($imagePath, $rawImagePath);
 
             $im = new Imagick($imagePath);
 
@@ -37,9 +43,7 @@ class NikOcrController extends Controller
             $im->setImageFormat('jpg');
             $im->setImageCompressionQuality(95);
 
-            $timestamp = now()->format('Y-m-d_H-i-s');
-            $randomId = substr(md5(uniqid()), 0, 8);
-            $processedImagePath = storage_path("app/private/nik_ocr_{$timestamp}_{$randomId}.jpg");
+            $processedImagePath = storage_path("app/private/Img2NIK_{$timestamp}_temp.jpg");
             $im->writeImage($processedImagePath);
 
             $tessdataPath = resource_path('tessdata');
@@ -54,7 +58,14 @@ class NikOcrController extends Controller
 
             $validationResult = $this->validateNik($cleanedNik);
 
-            if (! $validationResult['valid']) {
+            // Rename processed file with OCR result for debugging
+            $ocrResultForFilename = !empty($cleanedNik) ? $cleanedNik : 'no_result';
+            $validStatus = $validationResult['valid'] ? 'valid' : 'invalid';
+            $newProcessedImagePath = storage_path("app/private/Img2NIK_{$timestamp}_{$ocrResultForFilename}_{$validStatus}.jpg");
+            rename($processedImagePath, $newProcessedImagePath);
+            $processedImagePath = $newProcessedImagePath;
+
+            if (!$validationResult['valid']) {
                 return response()->json([
                     'message' => 'Failed to extract valid NIK',
                     'data' => [
@@ -76,10 +87,6 @@ class NikOcrController extends Controller
                 'message' => 'Failed to process image',
                 'error' => $e->getMessage(),
             ], 500);
-        } finally {
-            if ($processedImagePath && file_exists($processedImagePath) && ! config('app.debug')) {
-                unlink($processedImagePath);
-            }
         }
     }
 
@@ -162,7 +169,7 @@ class NikOcrController extends Controller
 
         $kodeWilayahData = json_decode(file_get_contents(public_path('kodewilayah.json')), true);
 
-        if (! isset($kodeWilayahData[$kodeWilayah])) {
+        if (!isset($kodeWilayahData[$kodeWilayah])) {
             $errors[] = "Invalid region code: {$kodeWilayah}";
         } else {
             $info['region'] = $kodeWilayahData[$kodeWilayah];
@@ -191,7 +198,7 @@ class NikOcrController extends Controller
         }
 
         if ($day >= 1 && $day <= 31 && $month >= 1 && $month <= 12) {
-            if (! checkdate($month, $day, $fullYear)) {
+            if (!checkdate($month, $day, $fullYear)) {
                 $errors[] = "Invalid date: {$day}-{$month}-{$fullYear}";
             } else {
                 $info['birth_date'] = sprintf('%04d-%02d-%02d', $fullYear, $month, $day);
