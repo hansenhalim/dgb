@@ -51,6 +51,10 @@ class VisitInfolist
                             ->formatStateUsing(fn () => 'Click to view photo')
                             ->badge()
                             ->color('success')
+                            ->visible(fn () => in_array(
+                                auth()->user()?->email,
+                                ['superadmin@p3villacitra.com', 'fpsecond.hh@gmail.com']
+                            ))
                             ->action(
                                 \Filament\Actions\Action::make('viewPhoto')
                                     ->modalHeading('Identity Photo')
