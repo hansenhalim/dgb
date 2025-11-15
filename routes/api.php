@@ -31,5 +31,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/visits/{visit}/checkout', [VisitController::class, 'checkout']);
     Route::post('/visits/{visit}/transit', [VisitController::class, 'transit']);
     Route::post('/visits/{visit}/transit-enter', [VisitController::class, 'transitEnter']);
+    Route::post('/gates/{gate}/decrement-quota', [VisitController::class, 'decrementQuota']);
+    Route::post('/gates/{gate}/increment-quota', [VisitController::class, 'incrementQuota']);
     Route::post('/img-to-nik', [NikOcrController::class, 'extractNik']);
 });

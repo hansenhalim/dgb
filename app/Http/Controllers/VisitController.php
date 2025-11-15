@@ -126,8 +126,6 @@ class VisitController extends Controller
             'banned_reason' => "Checked in at gate $gateId",
         ]);
 
-        Gate::where('id', $gateId)->decrement('current_quota');
-
         return response()->json([
             'message' => 'Gate opened successfully',
         ]);
@@ -167,10 +165,26 @@ class VisitController extends Controller
         $visit->rfid?->rfidable()->dissociate();
         $visit->rfid?->save();
 
-        Gate::where('id', $gateId)->increment('current_quota');
-
         return response()->json([
             'message' => 'Gate opened successfully',
+        ]);
+    }
+
+    public function decrementQuota(Gate $gate)
+    {
+        $gate->decrement('current_quota');
+
+        return response()->json([
+            'message' => 'Gate quota decremented successfully',
+        ]);
+    }
+
+    public function incrementQuota(Gate $gate)
+    {
+        $gate->increment('current_quota');
+
+        return response()->json([
+            'message' => 'Gate quota incremented successfully',
         ]);
     }
 
