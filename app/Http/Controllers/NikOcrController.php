@@ -59,13 +59,13 @@ class NikOcrController extends Controller
             $validationResult = $this->validateNik($cleanedNik);
 
             // Rename processed file with OCR result for debugging
-            $ocrResultForFilename = !empty($cleanedNik) ? $cleanedNik : 'no_result';
+            $ocrResultForFilename = ! empty($cleanedNik) ? $cleanedNik : 'no_result';
             $validStatus = $validationResult['valid'] ? 'valid' : 'invalid';
             $newProcessedImagePath = storage_path("app/private/Img2NIK_{$timestamp}_{$ocrResultForFilename}_{$validStatus}.jpg");
             rename($processedImagePath, $newProcessedImagePath);
             $processedImagePath = $newProcessedImagePath;
 
-            if (!$validationResult['valid']) {
+            if (! $validationResult['valid']) {
                 return response()->json([
                     'message' => 'Failed to extract valid NIK',
                     'data' => [
@@ -167,9 +167,9 @@ class NikOcrController extends Controller
         $tahun = substr($nik, 10, 2);
         $serial = substr($nik, 12, 4);
 
-        $kodeWilayahData = json_decode(file_get_contents(public_path('kodewilayah.json')), true);
+        $kodeWilayahData = json_decode(file_get_contents(storage_path('app/private/kodewilayah.json')), true);
 
-        if (!isset($kodeWilayahData[$kodeWilayah])) {
+        if (! isset($kodeWilayahData[$kodeWilayah])) {
             $errors[] = "Invalid region code: {$kodeWilayah}";
         } else {
             $info['region'] = $kodeWilayahData[$kodeWilayah];
@@ -198,7 +198,7 @@ class NikOcrController extends Controller
         }
 
         if ($day >= 1 && $day <= 31 && $month >= 1 && $month <= 12) {
-            if (!checkdate($month, $day, $fullYear)) {
+            if (! checkdate($month, $day, $fullYear)) {
                 $errors[] = "Invalid date: {$day}-{$month}-{$fullYear}";
             } else {
                 $info['birth_date'] = sprintf('%04d-%02d-%02d', $fullYear, $month, $day);
