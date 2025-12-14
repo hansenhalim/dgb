@@ -274,7 +274,7 @@ class VisitController extends Controller
 
     private function maskName(string $fullname): string
     {
-        $words = explode(' ', trim($fullname));
+        $words = array_filter(explode(' ', trim($fullname)));
 
         $maskedWords = array_map(function ($word) {
             $length = Str::length($word);
