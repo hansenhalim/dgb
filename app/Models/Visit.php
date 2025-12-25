@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enum\CurrentPosition;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -61,9 +62,39 @@ class Visit extends Model
         return $this->morphOne(Rfid::class, 'rfidable');
     }
 
+    protected function duration(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (!$this->checkin_at) {
+                    return '-';
+                }
+
+                $checkout = $this->checkout_at ?? now();
+                $diff = $this->checkin_at->diff($checkout);
+
+                // Calculate total days including years and months
+                $totalDays = $diff->y * 365 + $diff->m * 30 + $diff->d;
+
+                $parts = [];
+                if ($totalDays > 0) {
+                    $parts[] = "{$totalDays}d";
+                }
+                if ($diff->h > 0) {
+                    $parts[] = "{$diff->h}h";
+                }
+                if ($diff->i > 0) {
+                    $parts[] = "{$diff->i}m";
+                }
+
+                return !empty($parts) ? implode(' ', $parts) : '0m';
+            }
+        );
+    }
+
     public function getDecryptedIdentityPhotoUrl(): ?string
     {
-        if (! $this->identity_photo) {
+        if (!$this->identity_photo) {
             return null;
         }
 

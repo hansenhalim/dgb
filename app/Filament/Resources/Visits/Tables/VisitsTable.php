@@ -15,36 +15,34 @@ class VisitsTable
     {
         return $table
             ->columns([
-                // TextColumn::make('id')
-                //     ->label('ID'),
-                // TextColumn::make('identity_photo')
-                //     ->label('Photo')
-                //     ->formatStateUsing(fn($state): string => $state ? 'Available' : 'No photo')
-                //     ->badge()
-                //     ->color(fn($state): string => $state ? 'success' : 'gray'),
-                TextColumn::make('vehicle_plate_number')
-                    ->label('Vehicle Plate')
+                TextColumn::make('nama')
+                    ->getStateUsing(fn() => "-")
+                    ->label('NAMA')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('destination.name')
-                    ->label('Destination')
+                TextColumn::make('vehicle_plate_number')
+                    ->label('NO KENDARAAN')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('destination_name')
+                    ->label('TUJUAN')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('purpose_of_visit')
-                    ->label('Purpose')
+                    ->label('KEPERLUAN')
                     ->searchable()
                     ->limit(30),
                 TextColumn::make('current_position')
-                    ->label('Current Position')
+                    ->label('POSITION')
                     ->badge()
-                    ->color(fn (CurrentPosition $state): string => match ($state) {
+                    ->color(fn(CurrentPosition $state): string => match ($state) {
                         CurrentPosition::OUTSIDE => 'gray',
                         CurrentPosition::VILLA1 => 'success',
                         CurrentPosition::VILLA2 => 'info',
                         CurrentPosition::EXCLUSIVE => 'warning',
                         CurrentPosition::TRANSIT => 'danger',
                     })
-                    ->formatStateUsing(fn (CurrentPosition $state): string => match ($state) {
+                    ->formatStateUsing(fn(CurrentPosition $state): string => match ($state) {
                         CurrentPosition::OUTSIDE => 'Outside',
                         CurrentPosition::VILLA1 => 'Villa 1',
                         CurrentPosition::VILLA2 => 'Villa 2',
@@ -52,13 +50,24 @@ class VisitsTable
                         CurrentPosition::TRANSIT => 'Transit',
                     }),
                 TextColumn::make('checkin_at')
-                    ->label('Check-in')
+                    ->label('CHECK IN')
                     ->dateTime()
+                    ->sortable(),
+                TextColumn::make('checkinGate.name')
+                    ->label('CHECK IN GATE')
                     ->sortable(),
                 TextColumn::make('checkout_at')
-                    ->label('Check-out')
+                    ->label('CHECK OUT')
                     ->dateTime()
                     ->sortable(),
+                TextColumn::make('checkoutGate.name')
+                    ->label('CHECK OUT GATE')
+                    ->sortable(),
+                TextColumn::make('duration')
+                    ->label('DURATION')
+                    ->sortable(query: function ($query, string $direction): void {
+                        $query->orderByRaw("COALESCE(checkout_at, NOW()) - checkin_at {$direction}");
+                    }),
                 TextColumn::make('created_at')
                     ->label('Created')
                     ->dateTime()
