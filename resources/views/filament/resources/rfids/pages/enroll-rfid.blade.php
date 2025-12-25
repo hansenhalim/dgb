@@ -35,11 +35,19 @@
                         style="display: block; background-color: #e5e7eb; border-radius: 0.75rem; padding: 1rem 1.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.1em; color: #111827;">{{ $lastEnrolledCard['uid'] ?? '--------' }}</code>
                 </div>
 
-                <!-- Enrollment Action Button -->
-                <div
-                    x-bind:style="isEnrolling ? 'opacity: 0.5; pointer-events: none; cursor: not-allowed;' : ''"
-                    x-bind:inert="isEnrolling">
-                    {{ $this->enrollAction }}
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 0.75rem;">
+                    <div style="flex: 1;"
+                        x-bind:style="isEnrolling ? 'opacity: 0.5; pointer-events: none; cursor: not-allowed;' : ''"
+                        x-bind:inert="isEnrolling">
+                        {{ $this->enrollAction }}
+                    </div>
+
+                    <div style="flex: 1;"
+                        x-bind:style="isEnrolling ? 'opacity: 0.5; pointer-events: none; cursor: not-allowed;' : ''"
+                        x-bind:inert="isEnrolling">
+                        {{ $this->previewAction }}
+                    </div>
                 </div>
             </div>
         </x-filament::section>
@@ -59,16 +67,29 @@
                     await this.connectAndEnroll();
                 });
 
-                // Add keyboard shortcut for "E" key
+                Livewire.on('start-rfid-preview', async () => {
+                    await this.connectAndPreview();
+                });
+
+                // Add keyboard shortcuts
                 document.addEventListener('keydown', (event) => {
+                    // Don't trigger if user is typing in an input field
+                    if (event.target.tagName === 'INPUT' ||
+                        event.target.tagName === 'TEXTAREA' ||
+                        event.target.isContentEditable) {
+                        return;
+                    }
+
+                    // "E" key for enrollment
                     if ((event.key === 'e' || event.key === 'E') && !this.isEnrolling) {
-                        // Don't trigger if user is typing in an input field
-                        if (event.target.tagName !== 'INPUT' &&
-                            event.target.tagName !== 'TEXTAREA' &&
-                            !event.target.isContentEditable) {
-                            event.preventDefault();
-                            this.connectAndEnroll();
-                        }
+                        event.preventDefault();
+                        this.connectAndEnroll();
+                    }
+
+                    // "P" key for preview
+                    if ((event.key === 'p' || event.key === 'P') && !this.isEnrolling) {
+                        event.preventDefault();
+                        this.connectAndPreview();
                     }
                 });
             },
@@ -232,6 +253,141 @@
                 } catch (error) {
                     console.error('RFID Enrollment Error:', error);
                     this.showError('Error during RFID enrollment: ' + error.message);
+                    // On error, close everything
+                    await this.closeConnection();
+                } finally {
+                    this.isEnrolling = false;
+                }
+            },
+
+            async connectAndPreview() {
+                if (this.isEnrolling) {
+                    return;
+                }
+
+                this.isEnrolling = true;
+
+                try {
+                    // Check if Web Serial API is supported
+                    if (!('serial' in navigator)) {
+                        this.showError('Web Serial API is not supported in this browser. Please use Chrome, Edge, or Opera.');
+                        return;
+                    }
+
+                    const usbVendorId = 0x303a;
+
+                    // Request port (reuse if already open)
+                    if (!port) {
+                        port = await navigator.serial.requestPort({ filters: [{ usbVendorId }] });
+                    }
+
+                    // Only open if not already open
+                    if (!port.readable) {
+                        await port.open({
+                            baudRate: 115200,
+                            dataBits: 8,
+                            stopBits: 1,
+                            parity: 'none'
+                        });
+                    }
+
+                    // Get reader and writer (only if not already created)
+                    if (!reader || !writer) {
+                        const textDecoder = new TextDecoderStream();
+                        const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                        reader = textDecoder.readable.getReader();
+
+                        const textEncoder = new TextEncoderStream();
+                        const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+                        writer = textEncoder.writable.getWriter();
+                    }
+
+                    // Show loading notification
+                    new FilamentNotification()
+                        .title('Waiting for RFID Card')
+                        .body('Please present an RFID card to the reader...')
+                        .info()
+                        .send();
+
+                    // Helper function to read a complete response
+                    const readResponse = async (timeoutMs = 30000) => {
+                        return new Promise(async (resolve, reject) => {
+                            let buffer = '';
+                            const timeoutId = setTimeout(() => {
+                                console.error('Timeout. Buffer contents:', buffer);
+                                reject(new Error('Timeout waiting for RFID reader response'));
+                            }, timeoutMs);
+
+                            try {
+                                while (true) {
+                                    const { value, done } = await reader.read();
+                                    if (done) {
+                                        clearTimeout(timeoutId);
+                                        console.error('Reader done. Buffer:', buffer);
+                                        reject(new Error('Reader stream ended unexpectedly'));
+                                        break;
+                                    }
+
+                                    buffer += value;
+                                    console.log('Received chunk:', value, 'Total buffer:', buffer);
+
+                                    // Look for a complete line ending with \n
+                                    const lines = buffer.split('\n');
+
+                                    // Check if we have at least one complete line
+                                    if (lines.length > 1) {
+                                        // We have at least one complete line (everything before the last element)
+                                        const completeLine = lines[0].trim();
+
+                                        // Check if this line contains a response
+                                        if (completeLine.startsWith('OK') || completeLine.startsWith('ERR')) {
+                                            clearTimeout(timeoutId);
+                                            console.log('Complete response:', completeLine);
+                                            resolve(completeLine);
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                clearTimeout(timeoutId);
+                                console.error('Read error:', error);
+                                reject(error);
+                            }
+                        });
+                    };
+
+                    // Send SCAN_UID command
+                    await writer.write('SCAN_UID\n');
+
+                    // Read response
+                    let response = await readResponse();
+
+                    // Parse UID from SCAN_UID response - expecting "OK UID <hex_uid>"
+                    const uidMatch = response.match(/OK UID ([0-9A-Fa-f]+)/);
+
+                    if (uidMatch) {
+                        const uid = uidMatch[1].toUpperCase();
+
+                        // Show the UID in a notification
+                        new FilamentNotification()
+                            .title('Card Detected')
+                            .body(`HEX UID: ${uid}`)
+                            .success()
+                            .send();
+
+                        // Update the display with preview data
+                        $wire.call('handlePreview', uid);
+                    } else if (response.includes('ERR NO_TAG')) {
+                        this.showError('No RFID card detected. Please present a card and try again.');
+                    } else {
+                        this.showError('Failed to scan RFID card: ' + response);
+                    }
+
+                    // Don't close connection - keep it open for next preview/enrollment
+
+                } catch (error) {
+                    console.error('RFID Preview Error:', error);
+                    this.showError('Error during RFID preview: ' + error.message);
                     // On error, close everything
                     await this.closeConnection();
                 } finally {

@@ -29,17 +29,42 @@ class EnrollRfid extends Page implements HasForms
         return RfidForm::configure($schema);
     }
 
+    public function previewAction(): Action
+    {
+        return Action::make('preview')
+            ->label('Preview (p)')
+            ->color('gray')
+            ->action(fn () => $this->dispatch('start-rfid-preview'));
+    }
+
     public function enrollAction(): Action
     {
         return Action::make('enroll')
             ->label('Start Enrollment (e)')
             ->color('primary')
-            ->action(fn() => $this->dispatch('start-rfid-enrollment'));
+            ->action(fn () => $this->dispatch('start-rfid-enrollment'));
     }
 
     public function checkUidExists(string $uid): bool
     {
         return Rfid::whereUid($uid)->exists();
+    }
+
+    public function handlePreview(string $uid): void
+    {
+        $uid = strtoupper($uid);
+
+        // Calculate uid_numeric directly without creating a model instance
+        $swapped = implode('', array_reverse(str_split($uid, 2)));
+        $decimal = hexdec($swapped);
+        $uidNumeric = str_pad((string) $decimal, 10, '0', STR_PAD_LEFT);
+
+        // Store the preview info to display on the page
+        $this->lastEnrolledCard = [
+            'uid' => $uid,
+            'uid_numeric' => $uidNumeric,
+            'enrolled_at' => now()->timezone('Asia/Jakarta')->format('H:i:s'),
+        ];
     }
 
     public function handleEnrollmentComplete(string $uid): void
