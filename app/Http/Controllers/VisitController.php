@@ -249,13 +249,24 @@ class VisitController extends Controller
                 ->orWhere('checkout_gate_id', $gateId);
         });
 
-        $visits = $query->limit(5)->get()->map(fn ($visit) => [
-            'id' => $visit->id,
-            'vehicle_plate_number' => $visit->vehicle_plate_number,
-            'current_position' => $visit->current_position->formatName(),
-            'destination_name' => $visit->destination_name,
-            'created_at' => $visit->created_at,
-        ]);
+        $positionPriority = [
+            CurrentPosition::VILLA1->value => 1,
+            CurrentPosition::VILLA2->value => 2,
+            CurrentPosition::EXCLUSIVE->value => 3,
+            CurrentPosition::OUTSIDE->value => 4,
+            CurrentPosition::TRANSIT->value => 5,
+        ];
+
+        $visits = $query->limit(50)->get()
+            ->sortBy(fn ($visit) => $positionPriority[$visit->current_position->value] ?? 999)
+            ->values()
+            ->map(fn ($visit) => [
+                'id' => $visit->id,
+                'vehicle_plate_number' => $visit->vehicle_plate_number,
+                'current_position' => $visit->current_position->formatName(),
+                'destination_name' => $visit->destination_name,
+                'created_at' => $visit->created_at,
+            ]);
 
         return response()->json([
             'message' => 'Successfully get visit history',
