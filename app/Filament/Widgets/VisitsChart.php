@@ -24,7 +24,7 @@ class VisitsChart extends ChartWidget
 
         $visitCounts = Visit::query()
             ->whereBetween('checkin_at', [$startDate->startOfDay(), $endDate->endOfDay()])
-            ->select(DB::raw('DATE(checkin_at) as date'), DB::raw('COUNT(*) as count'))
+            ->select(DB::raw("DATE(checkin_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta') as date"), DB::raw('COUNT(*) as count'))
             ->groupBy('date')
             ->orderBy('date')
             ->pluck('count', 'date');

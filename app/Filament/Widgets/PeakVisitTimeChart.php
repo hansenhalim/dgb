@@ -34,14 +34,24 @@ class PeakVisitTimeChart extends ChartWidget
 
         $dayOfWeek = $dayMapping[$this->filter];
 
-        // Query visits grouped by hour for the selected day of week
+        // Query average visits per hour for the selected day of week (Asia/Jakarta timezone)
+        // First, get total count per hour and count of unique days
+        $totalDays = Visit::query()
+            ->whereNotNull('checkin_at')
+            ->whereRaw("EXTRACT(DOW FROM (checkin_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')) = ?", [$dayOfWeek])
+            ->selectRaw("COUNT(DISTINCT DATE(checkin_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')) as day_count")
+            ->value('day_count') ?: 1;
+
         $hourlyVisitCounts = Visit::query()
             ->whereNotNull('checkin_at')
-            ->whereRaw('EXTRACT(DOW FROM checkin_at) = ?', [$dayOfWeek])
-            ->select(DB::raw('EXTRACT(HOUR FROM checkin_at) as hour'), DB::raw('COUNT(*) as count'))
+            ->whereRaw("EXTRACT(DOW FROM (checkin_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')) = ?", [$dayOfWeek])
+            ->select(
+                DB::raw("EXTRACT(HOUR FROM (checkin_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')) as hour"),
+                DB::raw("CAST(COUNT(*) AS DECIMAL) / {$totalDays} as avg_count")
+            )
             ->groupBy('hour')
             ->orderBy('hour')
-            ->pluck('count', 'hour');
+            ->pluck('avg_count', 'hour');
 
         // Dummy data for different days (visits per hour 0-23)
         // $weekdayData = [
@@ -53,9 +63,9 @@ class PeakVisitTimeChart extends ChartWidget
         //     'saturday' => [2, 1, 0, 0, 1, 3, 8, 15, 24, 28, 32, 35, 30, 28, 25, 22, 26, 30, 24, 18, 12, 8, 5, 3],
         //     'sunday' => [5, 4, 3, 2, 1, 2, 4, 8, 12, 16, 20, 22, 20, 18, 16, 14, 12, 10, 8, 7, 6, 5, 4, 4],
         // ];
+        // $hourlyVisits = $weekdayData[$this->filter];
 
         $labels = [];
-        // $hourlyVisits = $weekdayData[$this->filter];
 
         for ($hour = 0; $hour < 24; $hour++) {
             $labels[] = (string) $hour;
@@ -65,7 +75,7 @@ class PeakVisitTimeChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Visits per Hour',
+                    'label' => 'Avg Visits per Hour',
                     'data' => $hourlyVisits,
                     'backgroundColor' => 'rgba(34, 197, 94, 0.6)',
                     'borderColor' => 'rgb(34, 197, 94)',
@@ -100,7 +110,7 @@ class PeakVisitTimeChart extends ChartWidget
                 'y' => [
                     'beginAtZero' => true,
                     'ticks' => [
-                        'stepSize' => 5,
+                        'stepSize' => 1,
                     ],
                     'grid' => [
                         'display' => true,
