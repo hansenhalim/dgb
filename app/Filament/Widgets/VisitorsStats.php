@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\DB;
 
 class VisitorsStats extends StatsOverviewWidget
 {
+    protected static ?int $sort = 1;
+
     protected function getHeading(): string
     {
-        return 'Visitor Statistics (' . now()->format('F Y') . ')';
+        return 'Visitor Statistics ('.now()->format('F Y').')';
     }
 
     protected function getStats(): array
@@ -78,7 +80,7 @@ class VisitorsStats extends StatsOverviewWidget
 
         return [
             Stat::make('Total Visits', number_format($currentMonthVisits))
-                ->description($visitsChange >= 0 ? "{$visitsChange}% increase" : abs($visitsChange) . '% decrease')
+                ->description($visitsChange >= 0 ? "{$visitsChange}% increase" : abs($visitsChange).'% decrease')
                 ->descriptionIcon($visitsChange >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($visitsChange >= 0 ? 'success' : 'danger'),
 

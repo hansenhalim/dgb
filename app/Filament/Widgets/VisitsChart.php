@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 
 class VisitsChart extends ChartWidget
 {
+    protected static ?int $sort = 2;
+
     protected ?string $heading = 'Visits Chart';
 
     public ?string $filter = '0';
@@ -41,6 +43,7 @@ class VisitsChart extends ChartWidget
             $dateKey = $date->format('Y-m-d');
             $labels[] = $date->format('j M');
             $data[] = $visitCounts->get($dateKey, 0);
+            // $data[] = $dummyData[$weeksAgo][$i];
         }
 
         return [
@@ -114,5 +117,4 @@ class VisitsChart extends ChartWidget
             '3' => '3 weeks ago',
         ];
     }
-
 }
