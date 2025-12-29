@@ -17,12 +17,12 @@ class VisitorInfolist
                     ->schema([
                         Grid::make(2)
                             ->schema([
-                                TextEntry::make('id')
-                                    ->label('Visitor ID'),
-
                                 TextEntry::make('identity_number')
                                     ->label('Identity Number')
-                                    ->formatStateUsing(fn() => '****************'),
+                                    ->formatStateUsing(fn () => '****************'),
+
+                                TextEntry::make('fullname')
+                                    ->label('Full Name'),
                             ]),
                     ]),
 
@@ -34,17 +34,17 @@ class VisitorInfolist
                                     ->label('Banned At')
                                     ->dateTime()
                                     ->badge()
-                                    ->color(fn($state): string => $state ? 'danger' : 'success')
-                                    ->formatStateUsing(fn($state): string => $state ? $state->format('M j, Y g:i A') : 'Not Banned'),
+                                    ->color(fn ($state): string => $state ? 'danger' : 'success')
+                                    ->formatStateUsing(fn ($state): string => $state ? $state->format('M j, Y g:i A') : 'Not Banned'),
 
                                 TextEntry::make('banned_reason')
                                     ->label('Ban Reason')
-                                    ->formatStateUsing(fn($state): string => $state ?: 'No ban reason')
+                                    ->formatStateUsing(fn ($state): string => $state ?: 'No ban reason')
                                     ->badge()
-                                    ->color(fn($state): string => $state ? 'danger' : 'gray'),
+                                    ->color(fn ($state): string => $state ? 'danger' : 'gray'),
                             ]),
                     ])
-                    ->visible(fn($record): bool => $record->banned_at !== null),
+                    ->visible(fn ($record): bool => $record->banned_at !== null),
 
                 Section::make('System Information')
                     ->schema([
