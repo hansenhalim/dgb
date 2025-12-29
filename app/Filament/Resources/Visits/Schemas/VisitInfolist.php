@@ -59,7 +59,7 @@ class VisitInfolist
                             ->color('success')
                             ->visible(fn () => in_array(
                                 auth()->user()?->email,
-                                ['superadmin@p3villacitra.com', 'fpsecond.hh@gmail.com']
+                                ['superadmin@p3villacitra.com', 'p3vc@p3villacitra.com']
                             ))
                             ->action(
                                 \Filament\Actions\Action::make('viewPhoto')
