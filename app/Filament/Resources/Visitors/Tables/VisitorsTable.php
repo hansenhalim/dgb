@@ -14,8 +14,6 @@ class VisitorsTable
     {
         return $table
             ->columns([
-                // TextColumn::make('id')
-                //     ->label('ID'),
                 TextColumn::make('identity_number')
                     ->label('Identity Number')
                     ->searchable(query: function ($query, $search) {
@@ -28,6 +26,9 @@ class VisitorsTable
                         return $query;
                     })
                     ->formatStateUsing(fn () => '****************'),
+                TextColumn::make('fullname')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('banned_at')
                     ->dateTime()
                     ->sortable(),

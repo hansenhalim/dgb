@@ -10,7 +10,12 @@ class Visitor extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['identity_number', 'banned_at', 'banned_reason'];
+    protected $fillable = [
+        'identity_number',
+        'fullname',
+        'banned_at',
+        'banned_reason',
+    ];
 
     protected function casts(): array
     {

@@ -56,9 +56,10 @@ class VisitController extends Controller
 
         $rfidKey = Str::upper($rfid->key);
 
-        $visitor = Visitor::firstOrCreate([
-            'identity_number' => Str::of($identityNumber)->hash('sha256'),
-        ]);
+        $visitor = Visitor::firstOrCreate(
+            ['identity_number' => Str::of($identityNumber)->hash('sha256')],
+            ['fullname' => $fullname],
+        );
 
         $visit = $visitor->visits()->create([
             'identity_photo' => DB::raw("decode('{$this->encryptToHex($identityPhoto)}', 'hex')"),

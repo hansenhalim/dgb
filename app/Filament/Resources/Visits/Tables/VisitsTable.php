@@ -15,8 +15,7 @@ class VisitsTable
     {
         return $table
             ->columns([
-                TextColumn::make('nama')
-                    ->getStateUsing(fn() => "-")
+                TextColumn::make('visitor.fullname')
                     ->label('NAMA')
                     ->searchable()
                     ->sortable(),
@@ -35,14 +34,14 @@ class VisitsTable
                 TextColumn::make('current_position')
                     ->label('POSITION')
                     ->badge()
-                    ->color(fn(CurrentPosition $state): string => match ($state) {
+                    ->color(fn (CurrentPosition $state): string => match ($state) {
                         CurrentPosition::OUTSIDE => 'gray',
                         CurrentPosition::VILLA1 => 'success',
                         CurrentPosition::VILLA2 => 'info',
                         CurrentPosition::EXCLUSIVE => 'warning',
                         CurrentPosition::TRANSIT => 'danger',
                     })
-                    ->formatStateUsing(fn(CurrentPosition $state): string => match ($state) {
+                    ->formatStateUsing(fn (CurrentPosition $state): string => match ($state) {
                         CurrentPosition::OUTSIDE => 'Outside',
                         CurrentPosition::VILLA1 => 'Villa 1',
                         CurrentPosition::VILLA2 => 'Villa 2',
