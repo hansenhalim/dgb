@@ -21,8 +21,7 @@ class VisitorInfolist
                                     ->label('Identity Number')
                                     ->formatStateUsing(fn () => '****************'),
 
-                                TextEntry::make('fullname')
-                                    ->label('Full Name'),
+                                TextEntry::make('fullname'),
                             ]),
                     ]),
 

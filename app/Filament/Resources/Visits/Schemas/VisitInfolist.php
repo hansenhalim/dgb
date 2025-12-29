@@ -21,9 +21,8 @@ class VisitInfolist
                                 TextEntry::make('rfid.uid_numeric')
                                     ->label('RFID UID'),
 
-                                TextEntry::make('nama')
-                                    ->label('Nama')
-                                    ->getStateUsing(fn() => "-"),
+                                TextEntry::make('visitor.fullname')
+                                    ->label('Nama'),
 
                                 TextEntry::make('vehicle_plate_number')
                                     ->label('Vehicle Plate Number'),
@@ -37,14 +36,14 @@ class VisitInfolist
                                 TextEntry::make('current_position')
                                     ->label('Current Position')
                                     ->badge()
-                                    ->color(fn(CurrentPosition $state): string => match ($state) {
+                                    ->color(fn (CurrentPosition $state): string => match ($state) {
                                         CurrentPosition::OUTSIDE => 'gray',
                                         CurrentPosition::VILLA1 => 'success',
                                         CurrentPosition::VILLA2 => 'info',
                                         CurrentPosition::EXCLUSIVE => 'warning',
                                         CurrentPosition::TRANSIT => 'danger',
                                     })
-                                    ->formatStateUsing(fn(CurrentPosition $state): string => match ($state) {
+                                    ->formatStateUsing(fn (CurrentPosition $state): string => match ($state) {
                                         CurrentPosition::OUTSIDE => 'Outside',
                                         CurrentPosition::VILLA1 => 'Villa 1',
                                         CurrentPosition::VILLA2 => 'Villa 2',
@@ -55,17 +54,17 @@ class VisitInfolist
 
                         TextEntry::make('identity_photo')
                             ->label('Identity Photo')
-                            ->formatStateUsing(fn() => 'Click to view photo')
+                            ->formatStateUsing(fn () => 'Click to view photo')
                             ->badge()
                             ->color('success')
-                            ->visible(fn() => in_array(
+                            ->visible(fn () => in_array(
                                 auth()->user()?->email,
                                 ['superadmin@p3villacitra.com', 'fpsecond.hh@gmail.com']
                             ))
                             ->action(
                                 \Filament\Actions\Action::make('viewPhoto')
                                     ->modalHeading('Identity Photo')
-                                    ->modalContent(fn($record) => view('filament.modals.identity-photo-viewer', [
+                                    ->modalContent(fn ($record) => view('filament.modals.identity-photo-viewer', [
                                         'photoUrl' => $record->getDecryptedIdentityPhotoUrl(),
                                     ]))
                                     ->modalSubmitAction(false)
