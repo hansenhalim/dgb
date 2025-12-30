@@ -47,7 +47,7 @@ class PeakVisitTimeChart extends ChartWidget
             ->whereRaw("EXTRACT(DOW FROM (checkin_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')) = ?", [$dayOfWeek])
             ->select(
                 DB::raw("EXTRACT(HOUR FROM (checkin_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')) as hour"),
-                DB::raw("CAST(COUNT(*) AS DECIMAL) / {$totalDays} as avg_count")
+                DB::raw("ROUND(CAST(COUNT(*) AS DECIMAL) / {$totalDays}) as avg_count")
             )
             ->groupBy('hour')
             ->orderBy('hour')
@@ -66,6 +66,7 @@ class PeakVisitTimeChart extends ChartWidget
         // $hourlyVisits = $weekdayData[$this->filter];
 
         $labels = [];
+        $hourlyVisits = [];
 
         for ($hour = 0; $hour < 24; $hour++) {
             $labels[] = (string) $hour;
