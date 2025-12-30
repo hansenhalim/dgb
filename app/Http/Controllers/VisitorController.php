@@ -12,13 +12,11 @@ class VisitorController extends Controller
     {
         $identityNumber = $request->input('identity_number');
 
-        $visitor = Visitor::select(['id', 'banned_at', 'banned_reason'])
-            ->where([
-                'identity_number' => Str::of($identityNumber)->hash('sha256'),
-            ])
+        $visitor = Visitor::select(['id', 'fullname', 'banned_at', 'banned_reason'])
+            ->where(['identity_number' => Str::of($identityNumber)->hash('sha256')])
             ->first();
 
-        if (!$visitor) {
+        if (! $visitor) {
             return response()->noContent();
         }
 

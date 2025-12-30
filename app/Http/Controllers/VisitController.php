@@ -22,13 +22,25 @@ class VisitController extends Controller
 {
     public function index(Visitor $visitor)
     {
-        $visits = $visitor->visits()->latest()->limit(5)->get([
-            'id',
-            'vehicle_plate_number',
-            'purpose_of_visit',
-            'destination_name',
-            'created_at',
-        ]);
+        $visits = $visitor->visits()
+            ->with('destination:name,position')
+            ->latest()
+            ->limit(3)
+            ->get([
+                'id',
+                'vehicle_plate_number',
+                'purpose_of_visit',
+                'destination_name',
+                'created_at',
+            ])
+            ->map(fn ($visit) => [
+                'id' => $visit->id,
+                'vehicle_plate_number' => $visit->vehicle_plate_number,
+                'purpose_of_visit' => $visit->purpose_of_visit,
+                'destination_name' => $visit->destination_name,
+                'destination_position' => $visit->destination?->position?->human(),
+                'created_at' => $visit->created_at,
+            ]);
 
         return response()->json([
             'message' => 'Previous visit records retrieved successfully.',
