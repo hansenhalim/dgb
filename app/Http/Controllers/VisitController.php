@@ -68,7 +68,7 @@ class VisitController extends Controller
 
         $rfidKey = Str::upper($rfid->key);
 
-        $visitor = Visitor::firstOrCreate(
+        $visitor = Visitor::updateOrCreate(
             ['identity_number' => Str::of($identityNumber)->hash('sha256')],
             ['fullname' => $fullname],
         );
