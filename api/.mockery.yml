@@ -1,0 +1,20 @@
+template: testify
+packages:
+  github.com/hansenhalim/dgb/api/internal/auth/usecase:
+    config:
+      all: true
+  github.com/hansenhalim/dgb/api/internal/visitor/usecase:
+    config:
+      all: true
+  github.com/hansenhalim/dgb/api/internal/rfid/usecase:
+    config:
+      all: true
+  github.com/hansenhalim/dgb/api/internal/transferrequest/usecase:
+    config:
+      all: true
+  github.com/hansenhalim/dgb/api/internal/destination/usecase:
+    config:
+      all: true
+  github.com/hansenhalim/dgb/api/internal/gate/usecase:
+    config:
+      all: true
