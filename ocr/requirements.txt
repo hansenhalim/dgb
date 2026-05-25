@@ -30,7 +30,6 @@ mpmath==1.3.0
     # via sympy
 numpy==2.4.4
     # via
-    #   -r requirements.in
     #   onnxruntime
     #   opencv-python
     #   rapidocr
@@ -44,9 +43,7 @@ opencv-python==4.13.0.92
 packaging==26.1
     # via onnxruntime
 pillow==12.2.0
-    # via
-    #   -r requirements.in
-    #   rapidocr
+    # via rapidocr
 protobuf==7.34.1
     # via onnxruntime
 pyclipper==1.4.0
@@ -55,10 +52,14 @@ pydantic==2.13.0
     # via fastapi
 pydantic-core==2.46.0
     # via pydantic
+python-multipart==0.0.29
+    # via -r requirements.in
 pyyaml==6.0.3
     # via
     #   omegaconf
     #   rapidocr
+rapidfuzz==3.14.5
+    # via -r requirements.in
 rapidocr==3.8.1
     # via -r requirements.in
 requests==2.33.1
@@ -75,11 +76,9 @@ tqdm==4.67.3
     # via rapidocr
 typing-extensions==4.15.0
     # via
-    #   anyio
     #   fastapi
     #   pydantic
     #   pydantic-core
-    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via

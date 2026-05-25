@@ -1,7 +1,6 @@
 package gateavailability
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 )
@@ -15,13 +14,27 @@ func NewEnv() *Env {
 }
 
 func (Env) IsAvailable(gateID int16) bool {
-	v := os.Getenv(fmt.Sprintf("GATE_%d_IS_AVAILABLE", gateID))
-	if v == "" {
+	switch gateID {
+	case 1:
+		return parseBoolDefault(os.Getenv("GATE_1_IS_AVAILABLE"), true)
+	case 2:
+		return parseBoolDefault(os.Getenv("GATE_2_IS_AVAILABLE"), true)
+	case 3:
+		return parseBoolDefault(os.Getenv("GATE_3_IS_AVAILABLE"), true)
+	case 4:
+		return parseBoolDefault(os.Getenv("GATE_4_IS_AVAILABLE"), true)
+	default:
 		return true
 	}
-	b, err := strconv.ParseBool(v)
+}
+
+func parseBoolDefault(s string, def bool) bool {
+	if s == "" {
+		return def
+	}
+	b, err := strconv.ParseBool(s)
 	if err != nil {
-		return true
+		return def
 	}
 	return b
 }

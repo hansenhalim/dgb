@@ -2,3 +2,5 @@ fastapi
 rapidocr
 onnxruntime
 uvicorn
+python-multipart
+rapidfuzz

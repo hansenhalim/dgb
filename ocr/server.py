@@ -1,48 +1,51 @@
-import base64
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
 
-from fastapi import FastAPI
-from pydantic import BaseModel
-from rapidocr import LangRec, OCRVersion, RapidOCR
+from extractors.pipeline import run_extraction, run_ocr
 
 app = FastAPI()
 
-engine = RapidOCR(
-    params={
-        "Global.use_cls": False,
-        "Det.ocr_version": OCRVersion.PPOCRV5,
-        "Rec.lang_type": LangRec.EN,
-        "Rec.ocr_version": OCRVersion.PPOCRV5,
-    }
-)
+MAX_IMAGE_BYTES = 512 * 1024
 
 
-class OcrRequest(BaseModel):
-    file: str
-    fileType: int = 1
+def _parse_fields(fields: str | None) -> list[str]:
+    if fields is None:
+        return []
+    return [f.strip() for f in fields.split(",") if f.strip()]
 
 
-@app.post("/ocr")
-async def ocr(request: OcrRequest):
-    image_bytes = base64.b64decode(request.file)
-    result = engine(image_bytes)
-    boxes = getattr(result, "boxes", None)
-    txts = getattr(result, "txts", None)
-    rec_texts = list(txts) if txts is not None else []
-    polys = (
-        boxes.tolist() if hasattr(boxes, "tolist") else (list(boxes) if boxes else [])
-    )
+@app.post("/extract-id")
+async def extract_id(
+    image: UploadFile = File(...),
+    fields: str | None = Form(None),
+):
+    if image.content_type is None or not image.content_type.startswith("image/"):
+        raise HTTPException(status_code=422, detail="Uploaded file must be an image.")
+
+    image_bytes = await image.read()
+
+    if len(image_bytes) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=422, detail="Image exceeds 512KB limit.")
+
+    items = run_ocr(image_bytes)
+
+    if not items:
+        return JSONResponse(
+            status_code=422,
+            content={"message": "No text detected in image", "data": None},
+        )
+
+    extracted = run_extraction(items)
+
+    requested_fields = _parse_fields(fields)
+    if requested_fields:
+        extracted["data"] = {
+            k: extracted["data"][k] for k in extracted["data"] if k in requested_fields
+        }
 
     return {
-        "result": {
-            "ocrResults": [
-                {
-                    "prunedResult": {
-                        "rec_texts": rec_texts,
-                        "rec_polys": polys,
-                    },
-                }
-            ]
-        }
+        "message": "Success",
+        "data": extracted,
     }
 
 

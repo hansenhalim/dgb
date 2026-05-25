@@ -35,8 +35,8 @@ return [
         ],
     ],
 
-    'paddleocr' => [
-        'url' => env('PADDLEOCR_URL', 'http://127.0.0.1:8080/ocr'),
+    'ocr' => [
+        'url' => env('OCR_URL', 'http://127.0.0.1:8080'),
     ],
 
 ];

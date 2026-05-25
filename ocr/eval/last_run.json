@@ -1,0 +1,35 @@
+{
+  "type_accuracy": {
+    "overall": 1.0,
+    "ktp": 1.0,
+    "negative": 1.0,
+    "sim_6_line": 1.0,
+    "sim_modern": 1.0,
+    "sim_old": 1.0
+  },
+  "field_accuracy": {
+    "overall": 0.9188861985472155,
+    "agama": 1.0,
+    "alamat": 0.5952380952380952,
+    "berlaku_hingga": 1.0,
+    "golongan_darah": 0.8015873015873016,
+    "jenis_kelamin": 1.0,
+    "jenis_sim": 1.0,
+    "kecamatan": 0.9473684210526315,
+    "kelurahan": 0.868421052631579,
+    "kewarganegaraan": 0.9736842105263158,
+    "kota": 0.631578947368421,
+    "nama": 0.9285714285714286,
+    "nik": 0.9736842105263158,
+    "nomor_sim": 0.9545454545454546,
+    "pekerjaan": 0.9920634920634921,
+    "provinsi": 1.0,
+    "rt": 1.0,
+    "rw": 1.0,
+    "status_perkawinan": 1.0,
+    "tanggal_berlaku": 1.0,
+    "tanggal_lahir": 0.9603174603174603,
+    "tempat_lahir": 0.8888888888888888,
+    "tempat_pembuatan": 0.9772727272727273
+  }
+}

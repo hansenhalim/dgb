@@ -1,0 +1,6 @@
+images/*
+labels/*
+cache/*
+!images/.gitkeep
+!labels/.gitkeep
+!cache/.gitkeep
