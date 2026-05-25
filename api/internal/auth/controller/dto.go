@@ -20,4 +20,5 @@ type verifySecretResponse struct {
 	Message    string `json:"message"`
 	Token      string `json:"token"`
 	ValidUntil string `json:"valid_until"`
+	GuardName  string `json:"guard_name"`
 }

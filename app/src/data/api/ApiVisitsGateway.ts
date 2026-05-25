@@ -87,7 +87,7 @@ export class ApiVisitsGateway implements VisitsGateway {
     );
 
     const res = await request<ApiEnvelope<CreateVisitResponseData>>(
-      "/api/visits",
+      "/v2/visits",
       {
         method: "POST",
         body: form,
@@ -108,7 +108,7 @@ export class ApiVisitsGateway implements VisitsGateway {
 
   async pulseGate(input: PulseGateInput): Promise<void> {
     const session = await loadSession();
-    await request<unknown>(`/api/gates/${input.gateId}/pulse`, {
+    await request<unknown>(`/v2/gates/${input.gateId}/pulse`, {
       method: "POST",
       body: JSON.stringify({
         visit_id: input.visitId,
@@ -120,7 +120,7 @@ export class ApiVisitsGateway implements VisitsGateway {
 
   async checkout(visitId: string): Promise<void> {
     const session = await loadSession();
-    await request<unknown>(`/api/visits/${visitId}/checkout`, {
+    await request<unknown>(`/v2/visits/${visitId}/checkout`, {
       method: "POST",
       token: session?.token ?? null,
     });
@@ -129,7 +129,7 @@ export class ApiVisitsGateway implements VisitsGateway {
   async transit(visitId: string, gateId: number): Promise<CardStateResponse> {
     const session = await loadSession();
     const res = await request<ApiEnvelope<CardStateWire>>(
-      `/api/visits/${visitId}/transit`,
+      `/v2/visits/${visitId}/transit`,
       {
         method: "POST",
         body: JSON.stringify({ gate_id: gateId }),
@@ -145,7 +145,7 @@ export class ApiVisitsGateway implements VisitsGateway {
   ): Promise<CardStateResponse> {
     const session = await loadSession();
     const res = await request<ApiEnvelope<CardStateWire>>(
-      `/api/visits/${visitId}/transit-enter`,
+      `/v2/visits/${visitId}/transit-enter`,
       {
         method: "POST",
         body: JSON.stringify({ gate_id: gateId }),
@@ -158,7 +158,7 @@ export class ApiVisitsGateway implements VisitsGateway {
   async getHistory(gateId: number): Promise<VisitHistoryEntry[]> {
     const session = await loadSession();
     const res = await request<ApiEnvelope<VisitHistoryWire[]>>(
-      `/api/visits/history?gate_id=${gateId}`,
+      `/v2/visits/history?gate_id=${gateId}`,
       { token: session?.token ?? null },
     );
     return res.data.map((wire) => {

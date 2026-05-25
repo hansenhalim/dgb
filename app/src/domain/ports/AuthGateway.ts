@@ -4,7 +4,6 @@ import type { ScannedCard } from "./RfidReader";
 export class LoginError extends Error {
   constructor(
     public readonly code:
-      | "uid_not_found"
       | "invalid_pin"
       | "card_read_failed"
       | "invalid_secret"
@@ -18,11 +17,10 @@ export class LoginError extends Error {
 
 export interface AuthGateway {
   /**
-   * Runs the full 3-step handshake:
-   *   1. lookup-uid  → guard name
-   *   2. verify-pin  → rfid key
-   *   3. READ card with key → secret bytes
-   *   4. verify-secret → bearer token + expiry
+   * Runs the 3-step handshake:
+   *   1. verify-pin    → rfid key (collapses unknown-UID and wrong-PIN into invalid_pin)
+   *   2. READ card with key → secret bytes
+   *   3. verify-secret → bearer token + expiry + guard name
    * Persists the session and returns it. Throws {@link LoginError} on failure.
    */
   login(pin: string, card: ScannedCard): Promise<Session>;
@@ -30,6 +28,6 @@ export interface AuthGateway {
   /** Current active session (rehydrated from storage on cold start), or null. */
   currentSession(): Promise<Session | null>;
 
-  /** Invalidate the token server-side and clear local session. */
+  /** Clear local session. Server-side has no token revocation — JWTs are stateless. */
   logout(): Promise<void>;
 }

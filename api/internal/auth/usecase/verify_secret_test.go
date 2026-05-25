@@ -51,7 +51,7 @@ func TestVerifySecret_Success(t *testing.T) {
 	expectedExpiry := now.Add(12 * time.Hour)
 
 	sut.rfidRepo.EXPECT().FindGuardByUID(context.Background(), uid).
-		Return(&entity.Rfid{Staff: &entity.Staff{ID: staffID, SecretKey: storedSecretHash}}, nil).Once()
+		Return(&entity.Rfid{Staff: &entity.Staff{ID: staffID, Name: "Jokul Doe", SecretKey: storedSecretHash}}, nil).Once()
 	sut.digester.EXPECT().SHA256Hex(secretBytes).Return(storedSecretHash).Once()
 	sut.clock.EXPECT().Now().Return(now).Once()
 	sut.issuer.EXPECT().Issue(staffID.String(), expectedExpiry).Return("signed.jwt.value", nil).Once()
@@ -66,6 +66,7 @@ func TestVerifySecret_Success(t *testing.T) {
 	require.NotNil(t, out)
 	assert.Equal(t, "signed.jwt.value", out.Token)
 	assert.True(t, out.ValidUntil.Equal(expectedExpiry))
+	assert.Equal(t, "Jokul Doe", out.GuardName)
 }
 
 func TestVerifySecret_RfidNotFound(t *testing.T) {

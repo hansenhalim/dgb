@@ -1,4 +1,5 @@
 import { env } from "@/config/env";
+import { loadSession } from "@/data/auth/sessionStore";
 import type { ExtractedId, IdExtractor } from "@/domain/ports";
 
 type ExtractIdResponse = {
@@ -18,6 +19,7 @@ export class ApiIdExtractor implements IdExtractor {
     if (!env.apiBaseUrl) {
       throw new Error("EXPO_PUBLIC_API_BASE_URL is not set.");
     }
+    const session = await loadSession();
     const form = new FormData();
     form.append("image", {
       uri: imageUri,
@@ -26,9 +28,12 @@ export class ApiIdExtractor implements IdExtractor {
     } as unknown as Blob);
     form.append("fields", "nik,nomor_sim,nama");
 
-    const res = await fetch(`${env.apiBaseUrl}/api/extract-id`, {
+    const res = await fetch(`${env.apiBaseUrl}/v2/extract-id`, {
       method: "POST",
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+      },
       body: form,
     });
     if (!res.ok) {

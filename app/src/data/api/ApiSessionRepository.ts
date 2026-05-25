@@ -22,6 +22,11 @@ type ApiDestination = {
   position: string;
 };
 
+type ApiHome = {
+  cardStock: { available: number; total: number };
+  visits: { active: number; total: number };
+};
+
 function toGate(g: ApiGate): Gate {
   return {
     id: g.id,
@@ -32,19 +37,29 @@ function toGate(g: ApiGate): Gate {
 }
 
 export class ApiSessionRepository implements SessionRepository {
-  getDashboard(): Promise<DashboardSnapshot> {
-    return request<DashboardSnapshot>("/session/dashboard");
+  async getDashboard(): Promise<DashboardSnapshot> {
+    const session = await loadSession();
+    const res = await request<ApiEnvelope<ApiHome>>("/v2/home", {
+      token: session?.token ?? null,
+    });
+    return {
+      cardStock: res.data.cardStock,
+      visits: res.data.visits,
+    };
   }
 
   async listGates(): Promise<Gate[]> {
-    const res = await request<ApiEnvelope<ApiGate[]>>("/gates");
+    const session = await loadSession();
+    const res = await request<ApiEnvelope<ApiGate[]>>("/v2/gates", {
+      token: session?.token ?? null,
+    });
     return res.data.map(toGate);
   }
 
   async getRfidKey(uid: string): Promise<string> {
     const session = await loadSession();
     const res = await request<RfidKeyResponse>(
-      `/api/rfid-key?uid=${encodeURIComponent(uid)}`,
+      `/v2/rfid-key?uid=${encodeURIComponent(uid)}`,
       { token: session?.token ?? null },
     );
     return res.rfid_key;
@@ -53,7 +68,7 @@ export class ApiSessionRepository implements SessionRepository {
   async listDestinations(): Promise<Destination[]> {
     const session = await loadSession();
     const res = await request<ApiEnvelope<ApiDestination[]>>(
-      "/api/destinations",
+      "/v2/destinations",
       { token: session?.token ?? null },
     );
     return res.data.map((d) => {

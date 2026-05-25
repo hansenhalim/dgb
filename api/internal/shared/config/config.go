@@ -21,6 +21,8 @@ type Config struct {
 
 	JWTSecret string
 	AppKey    string
+
+	OCRURL string
 }
 
 func Load() (*Config, error) {
@@ -48,6 +50,7 @@ func Load() (*Config, error) {
 		DBSSLMode:    v.GetString("DB_SSLMODE"),
 		JWTSecret:    v.GetString("JWT_SECRET"),
 		AppKey:       v.GetString("APP_KEY"),
+		OCRURL:       v.GetString("OCR_URL"),
 	}
 
 	if cfg.DBDatabase == "" {

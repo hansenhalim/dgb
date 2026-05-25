@@ -19,6 +19,7 @@ type VerifySecretInput struct {
 type VerifySecretOutput struct {
 	Token      string
 	ValidUntil time.Time
+	GuardName  string
 }
 
 type VerifySecretUsecase interface {
@@ -69,5 +70,6 @@ func (u *verifySecret) Execute(ctx context.Context, in VerifySecretInput) (*Veri
 	return &VerifySecretOutput{
 		Token:      token,
 		ValidUntil: expires,
+		GuardName:  rfid.Staff.Name,
 	}, nil
 }

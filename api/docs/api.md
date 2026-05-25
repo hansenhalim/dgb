@@ -1,6 +1,8 @@
 # API
 
-All responses use `application/json` and a top-level `message` field. All endpoints are mounted under `/auth`.
+All responses use `application/json` and a top-level `message` field (`POST /extract-id` is the exception — its body is the upstream OCR service's response forwarded verbatim).
+
+**Path prefix.** Clients reach this service under the `/v2/...` prefix; the edge proxy strips `/v2/` before forwarding. Paths below are the post-proxy paths the Go server actually mounts. From a client, prepend `/v2/` (e.g. `/v2/auth/verify-pin`).
 
 ## `POST /auth/verify-pin`
 
@@ -89,11 +91,12 @@ The server hex-decodes `secret_key` to 512 raw bytes, takes the SHA-256, and com
 {
   "message": "You have logged in successfully.",
   "token": "<HS256 JWT>",
-  "valid_until": "2026-05-17T00:00:00Z"
+  "valid_until": "2026-05-17T00:00:00Z",
+  "guard_name": "Jokul Doe"
 }
 ```
 
-`token` is a signed JWT with `sub` set to the staff UUID and `exp` 12 hours after issuance. Pass it as `Authorization: Bearer <token>` to authenticated endpoints. `valid_until` is the `exp` claim formatted as RFC 3339 UTC.
+`token` is a signed JWT with `sub` set to the staff UUID and `exp` 12 hours after issuance. Pass it as `Authorization: Bearer <token>` to authenticated endpoints. `valid_until` is the `exp` claim formatted as RFC 3339 UTC. `guard_name` is the authenticated staff's `name` and is the only place the client receives it — there is no separate lookup endpoint.
 
 **`401 Unauthorized`** — secret does not match.
 
@@ -110,6 +113,43 @@ The server hex-decodes `secret_key` to 512 raw bytes, takes the SHA-256, and com
 ## Logout
 
 There is no logout endpoint. JWTs are stateless and the server keeps no per-token state — the client simply discards the token. The token remains technically valid until its `exp`.
+
+---
+
+## `GET /home`
+
+Aggregate counts for the guard's home screen. Requires bearer token.
+
+### Request
+
+```
+Authorization: Bearer <token>
+```
+
+No body.
+
+### Responses
+
+**`200 OK`**
+
+```json
+{
+  "message": "Home dashboard retrieved successfully.",
+  "data": {
+    "cardStock": { "available": 605, "total": 617 },
+    "visits": { "active": 12, "total": 28 }
+  }
+}
+```
+
+| field                 | source |
+| --------------------- | ------ |
+| `cardStock.available` | `SUM(gates.current_quota)` — free cards across all gates right now |
+| `cardStock.total`     | `cardStock.available + visits.active` — i.e. free cards plus cards currently issued to active visits |
+| `visits.active`       | `COUNT(visits WHERE checkout_at IS NULL)` |
+| `visits.total`        | `COUNT(visits WHERE checkin_at >= today UTC)` — today's check-in count |
+
+**`401 Unauthorized`** — token missing/malformed/expired.
 
 ---
 
@@ -148,6 +188,47 @@ No body.
 ```json
 { "message": "Invalid token." }
 ```
+
+---
+
+## `POST /gates/{id}/pulse`
+
+Fire the boom gate connected to the given gate, in the given direction. Requires bearer token.
+
+The server is fire-and-forget: it validates the request and immediately returns `204 No Content`, then asynchronously issues a `GET` to the configured webhook URL with a 1s timeout. Webhook errors (network failure, non-2xx, timeout) are warn-logged and swallowed — the client never sees them. Mirrors the Laravel `callWebhook(gateId, direction)` reference: missing/empty URL is a silent no-op.
+
+The URL is resolved per-(gate, direction) from env: `GATE_<id>_<IN|OUT>_WEBHOOK_URL`. Typical target is a Tasmota / KMtronic / ESPHome relay.
+
+### Request
+
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "visit_id": "f3d5c6a8-1eab-4b1a-a8d4-092cf15b65e9",
+  "direction": "in"
+}
+```
+
+| field       | type   | rules                                |
+| ----------- | ------ | ------------------------------------ |
+| `visit_id`  | string | required, UUID format (validated for shape but currently unused server-side — accepted for forward compatibility) |
+| `direction` | string | required, exactly `"in"` or `"out"`  |
+
+### Responses
+
+**`204 No Content`** — request accepted; webhook dispatched asynchronously. Empty body. Returned regardless of whether the webhook URL is configured or whether the downstream call ultimately succeeds.
+
+**`400 Bad Request`** — `id` not a positive int16, or body fails validation (missing field, malformed UUID, direction not in `{"in","out"}`, malformed JSON).
+
+```json
+{ "message": "Invalid request data." }
+```
+
+**`401 Unauthorized`** — token missing/malformed/expired.
 
 ---
 
@@ -677,3 +758,58 @@ Authorization: Bearer <token>
 **`422 Unprocessable Entity`** — `gate_id` missing or invalid.
 
 **`401 Unauthorized`** — token missing/malformed/expired.
+
+---
+
+## `POST /extract-id`
+
+Proxy a multipart image upload to the external OCR service for Indonesian-ID extraction (KTP / SIM). The handler validates JWT + input shape, forwards the multipart body to `${OCR_URL}/extract-id`, and returns the upstream response verbatim (body bytes + status + `Content-Type`). Mirrors the Laravel `ExtractIdController`.
+
+### Request
+
+```
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+| field    | type   | rules                                                |
+| -------- | ------ | ---------------------------------------------------- |
+| `image`  | file   | required, ≤ 512 KB                                   |
+| `fields` | string | optional; comma-separated field names (e.g. `nik,nomor_sim,nama`). Forwarded as-is. |
+
+### Responses
+
+The body and status are whatever the OCR service returns. On success the OCR service typically returns:
+
+```json
+{
+  "message": "OK",
+  "data": {
+    "type": "ktp",
+    "data": {
+      "nik": "1234567890123456",
+      "nama": "JOKUL DOE"
+    }
+  }
+}
+```
+
+**`400 Bad Request`** — image missing, > 512 KB, or malformed multipart.
+
+```json
+{ "message": "Image exceeds 512KB limit or invalid input" }
+```
+
+**`401 Unauthorized`** — token missing/malformed/expired.
+
+**`502 Bad Gateway`** — OCR service unreachable or its response could not be read.
+
+```json
+{ "message": "OCR service unreachable." }
+```
+
+**`503 Service Unavailable`** — `OCR_URL` is not configured on the server.
+
+```json
+{ "message": "OCR service not configured." }
+```

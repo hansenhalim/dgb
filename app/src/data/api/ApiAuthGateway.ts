@@ -10,12 +10,12 @@ import {
 
 import { HttpError, request } from "./httpClient";
 
-type LookupUidResponse = { message: string; guard_name: string };
 type VerifyPinResponse = { message: string; rfid_key: string };
 type VerifySecretResponse = {
   message: string;
   token: string;
   valid_until: string;
+  guard_name: string;
 };
 
 function deviceName(): string {
@@ -24,20 +24,9 @@ function deviceName(): string {
 
 export class ApiAuthGateway implements AuthGateway {
   async login(pin: string, card: ScannedCard): Promise<Session> {
-    let guardName: string;
-    try {
-      const res = await request<LookupUidResponse>("/api/auth/lookup-uid", {
-        method: "POST",
-        body: JSON.stringify({ uid: card.uid }),
-      });
-      guardName = res.guard_name;
-    } catch (e) {
-      throw wrap(e, "uid_not_found", "Kartu tidak terdaftar.");
-    }
-
     let rfidKey: string;
     try {
-      const res = await request<VerifyPinResponse>("/api/auth/verify-pin", {
+      const res = await request<VerifyPinResponse>("/v2/auth/verify-pin", {
         method: "POST",
         body: JSON.stringify({ uid: card.uid, pin }),
       });
@@ -59,7 +48,7 @@ export class ApiAuthGateway implements AuthGateway {
     let verified: VerifySecretResponse;
     try {
       verified = await request<VerifySecretResponse>(
-        "/api/auth/verify-secret",
+        "/v2/auth/verify-secret",
         {
           method: "POST",
           body: JSON.stringify({
@@ -76,7 +65,7 @@ export class ApiAuthGateway implements AuthGateway {
     const session: Session = {
       token: verified.token,
       validUntil: new Date(verified.valid_until),
-      guardName,
+      guardName: verified.guard_name,
     };
     await saveSession(session);
     return session;
@@ -87,17 +76,6 @@ export class ApiAuthGateway implements AuthGateway {
   }
 
   async logout(): Promise<void> {
-    const session = await loadSession();
-    if (session) {
-      try {
-        await request<{ message: string }>("/api/auth/logout", {
-          method: "POST",
-          token: session.token,
-        });
-      } catch {
-        // Ignore — even if server call fails, clear local state.
-      }
-    }
     await clearSession();
   }
 }

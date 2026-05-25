@@ -34,7 +34,7 @@ export class ApiTransfersGateway implements TransfersGateway {
     const session = await loadSession();
     // Server returns 204 No Content when no pending request — httpClient surfaces that as null.
     const res = await request<ApiEnvelope<TransferRequestWire> | null>(
-      `/api/gates/${gateId}/transfer-requests`,
+      `/v2/gates/${gateId}/transfer-requests`,
       { token: session?.token ?? null },
     );
     if (!res) return null;
@@ -43,7 +43,7 @@ export class ApiTransfersGateway implements TransfersGateway {
 
   async create(input: CreateTransferInput): Promise<void> {
     const session = await loadSession();
-    await request<unknown>("/api/transfer-requests", {
+    await request<unknown>("/v2/transfer-requests", {
       method: "POST",
       body: JSON.stringify({
         from_gate: input.fromGateId,
@@ -56,7 +56,7 @@ export class ApiTransfersGateway implements TransfersGateway {
 
   async respond(id: number, status: TransferRespondStatus): Promise<void> {
     const session = await loadSession();
-    await request<unknown>(`/api/transfer-requests/${id}`, {
+    await request<unknown>(`/v2/transfer-requests/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
       token: session?.token ?? null,

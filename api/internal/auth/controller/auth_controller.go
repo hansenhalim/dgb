@@ -100,5 +100,6 @@ func (c *AuthController) VerifySecret(ctx *echo.Context) error {
 		Message:    "You have logged in successfully.",
 		Token:      out.Token,
 		ValidUntil: out.ValidUntil.UTC().Format(time.RFC3339),
+		GuardName:  out.GuardName,
 	})
 }

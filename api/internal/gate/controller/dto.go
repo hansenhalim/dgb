@@ -11,3 +11,8 @@ type listGatesResponse struct {
 	Message string     `json:"message"`
 	Data    []gateItem `json:"data"`
 }
+
+type pulseGateRequest struct {
+	VisitID   string `json:"visit_id" validate:"required,uuid"`
+	Direction string `json:"direction" validate:"required,oneof=in out"`
+}

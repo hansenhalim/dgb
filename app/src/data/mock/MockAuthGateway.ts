@@ -17,19 +17,14 @@ const RFID_KEY = "C0FFEE".repeat(32);
 
 export class MockAuthGateway implements AuthGateway {
   async login(pin: string, card: ScannedCard): Promise<Session> {
-    // 1. POST /api/auth/lookup-uid → 404 unless UID is assigned to a guard.
-    await delay(120);
-    if (card.uid.toUpperCase() !== GUARD_UID) {
-      throw new LoginError("uid_not_found", "Kartu tidak terdaftar.");
-    }
-
-    // 2. verify-pin
+    // 1. verify-pin: server returns 404 for non-guard UIDs and 401 for wrong PIN;
+    //    the API gateway collapses both into invalid_pin.
     await delay(150);
-    if (pin !== ACCEPTED_PIN) {
+    if (card.uid.toUpperCase() !== GUARD_UID || pin !== ACCEPTED_PIN) {
       throw new LoginError("invalid_pin", "PIN salah.");
     }
 
-    // 3. READ card for secret
+    // 2. READ card for secret
     try {
       await card.readSecret(RFID_KEY);
     } catch (e) {
@@ -39,7 +34,7 @@ export class MockAuthGateway implements AuthGateway {
       );
     }
 
-    // 4. verify-secret → token
+    // 3. verify-secret → token (server includes guard_name in the response)
     await delay(150);
     const session: Session = {
       token: `mock|${Math.random().toString(36).slice(2)}`,
