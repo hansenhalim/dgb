@@ -5,6 +5,7 @@ import {
   ApiIdExtractor,
   ApiSessionRepository,
   ApiTransfersGateway,
+  ApiVisitorsGateway,
   ApiVisitsGateway,
 } from "@/data/api";
 import {
@@ -12,6 +13,7 @@ import {
   MockIdExtractor,
   MockSessionRepository,
   MockTransfersGateway,
+  MockVisitorsGateway,
   MockVisitsGateway,
 } from "@/data/mock";
 import {
@@ -25,6 +27,7 @@ import type {
   RfidReader,
   SessionRepository,
   TransfersGateway,
+  VisitorsGateway,
   VisitsGateway,
 } from "@/domain/ports";
 
@@ -36,6 +39,7 @@ export type Services = {
   rfid: RfidReader;
   idExtractor: IdExtractor;
   visits: VisitsGateway;
+  visitors: VisitorsGateway;
   transfers: TransfersGateway;
 };
 
@@ -68,11 +72,15 @@ function buildServices(
     ? new MockVisitsGateway()
     : new ApiVisitsGateway();
 
+  const visitors: VisitorsGateway = useMock
+    ? new MockVisitorsGateway()
+    : new ApiVisitorsGateway();
+
   const transfers: TransfersGateway = useMock
     ? new MockTransfersGateway()
     : new ApiTransfersGateway();
 
-  return { auth, session, rfid, idExtractor, visits, transfers };
+  return { auth, session, rfid, idExtractor, visits, visitors, transfers };
 }
 
 const ServicesContext = createContext<Services | null>(null);

@@ -31,3 +31,8 @@ export type {
   TransferRespondStatus,
   TransfersGateway,
 } from "./TransfersGateway";
+export type {
+  VisitorLatestVisit,
+  VisitorPreflight,
+  VisitorsGateway,
+} from "./VisitorsGateway";

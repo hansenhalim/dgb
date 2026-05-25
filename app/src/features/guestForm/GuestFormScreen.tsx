@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo } from "react";
 import {
+  ActivityIndicator,
   Keyboard,
   Pressable,
   StyleSheet,
@@ -81,6 +82,18 @@ export default function GuestFormScreen() {
         keyboardShouldPersistTaps="handled"
         bottomOffset={96}
       >
+        {vm.preflightStatus === "banned" && vm.preflightVisitor ? (
+          <View style={styles.banner}>
+            <WarningTriangle size={20} color={colors.red} />
+            <View style={styles.bannerBody}>
+              <Text style={styles.bannerTitle}>PENGUNJUNG DIBLOKIR</Text>
+              <Text style={styles.bannerText}>
+                {vm.preflightVisitor.bannedReason ?? "Tidak ada alasan."}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         <View style={[styles.layout, isTablet && styles.layoutTablet]}>
           <View style={[styles.column, isTablet && styles.columnLeft]}>
             <View style={styles.cardNumberRow}>
@@ -107,7 +120,12 @@ export default function GuestFormScreen() {
 
           <View style={[styles.column, isTablet && styles.columnRight]}>
             <View style={styles.field}>
-              <Text style={styles.label}>NIK</Text>
+              <View style={styles.nikLabelRow}>
+                <Text style={styles.label}>NIK</Text>
+                {vm.preflightStatus === "loading" ? (
+                  <ActivityIndicator size="small" color={colors.inkMuted} />
+                ) : null}
+              </View>
               <TextInput
                 style={[styles.input, vm.isProcessing && styles.inputDisabled]}
                 value={vm.nik}
@@ -310,6 +328,11 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     fontSize: 10,
     color: colors.inkMuted,
     letterSpacing: 1.2,
+  },
+  nikLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   input: {
     textTransform: "uppercase",

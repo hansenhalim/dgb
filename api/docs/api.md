@@ -1,10 +1,10 @@
 # API
 
-All responses use `application/json` and a top-level `message` field (`POST /extract-id` is the exception — its body is the upstream OCR service's response forwarded verbatim).
+All responses use `application/json` and a top-level `message` field (`POST /v2/extract-id` is the exception — its body is the upstream OCR service's response forwarded verbatim).
 
-**Path prefix.** Clients reach this service under the `/v2/...` prefix; the edge proxy strips `/v2/` before forwarding. Paths below are the post-proxy paths the Go server actually mounts. From a client, prepend `/v2/` (e.g. `/v2/auth/verify-pin`).
+**Path prefix.** All routes are mounted under `/v2/`. Clients call this service directly with the `/v2/` prefix (e.g. `/v2/auth/verify-pin`); no edge proxy rewrite is required.
 
-## `POST /auth/verify-pin`
+## `POST /v2/auth/verify-pin`
 
 Verify the 6-digit PIN for an RFID card. On success returns the card's 96-byte key as an uppercase hex string.
 
@@ -61,7 +61,7 @@ Verify the 6-digit PIN for an RFID card. On success returns the card's 96-byte k
 
 ---
 
-## `POST /auth/verify-secret`
+## `POST /v2/auth/verify-secret`
 
 Verify the guard's secret key (the 512-byte block-encoded RFID secret) and issue an HS256 JWT valid for 12 hours.
 
@@ -116,7 +116,7 @@ There is no logout endpoint. JWTs are stateless and the server keeps no per-toke
 
 ---
 
-## `GET /home`
+## `GET /v2/home`
 
 Aggregate counts for the guard's home screen. Requires bearer token.
 
@@ -153,7 +153,7 @@ No body.
 
 ---
 
-## `GET /gates`
+## `GET /v2/gates`
 
 List all gates with their current quota and an availability flag. Requires a valid bearer token issued by `verify-secret`.
 
@@ -191,7 +191,7 @@ No body.
 
 ---
 
-## `POST /gates/{id}/pulse`
+## `POST /v2/gates/{id}/pulse`
 
 Fire the boom gate connected to the given gate, in the given direction. Requires bearer token.
 
@@ -232,7 +232,7 @@ Content-Type: application/json
 
 ---
 
-## `GET /gates/{id}/transfer-requests`
+## `GET /v2/gates/{id}/transfer-requests`
 
 Check whether a pending transfer request exists for the given gate (as either source or destination). Requires bearer token.
 
@@ -264,7 +264,7 @@ Authorization: Bearer <token>
 
 ---
 
-## `POST /transfer-requests`
+## `POST /v2/transfer-requests`
 
 Open a new transfer request from one gate to another. Requires bearer token; the authenticated guard becomes `sender_staff_id`.
 
@@ -310,7 +310,7 @@ Open a new transfer request from one gate to another. Requires bearer token; the
 
 ---
 
-## `PATCH /transfer-requests/{id}`
+## `PATCH /v2/transfer-requests/{id}`
 
 Respond to a pending transfer request. The authenticated guard becomes `recipient_staff_id`. On `confirm`, source gate's `current_quota` is decremented and destination's is incremented in the same transaction.
 
@@ -346,7 +346,7 @@ or
 
 ---
 
-## `GET /rfid-key?uid=<hex>`
+## `GET /v2/rfid-key?uid=<hex>`
 
 Return the 96-byte key stored on a non-staff RFID (e.g. a visitor card). Requires bearer token. Mirrors `verify-pin`'s key handling, but the card must NOT be assigned to a staff member.
 
@@ -385,7 +385,7 @@ Authorization: Bearer <token>
 
 ---
 
-## `GET /visitors?identity_number=<plain>`
+## `GET /v2/visitors?identity_number=<plain>`
 
 Look up a visitor by their plaintext identity number. The server SHA-256s the identity number and queries `visitors.identity_number` (which stores the hash, not the plaintext) — mirrors Laravel's `Str::of($identityNumber)->hash('sha256')`. Response also embeds the visitor's single most recent visit so the caller doesn't need a second roundtrip. Requires bearer token.
 
@@ -436,7 +436,7 @@ Authorization: Bearer <token>
 
 ---
 
-## `POST /visits`
+## `POST /v2/visits`
 
 Create a new visit record AND auto-checkin in a single call. Requires bearer token. Body must be `multipart/form-data` because of the `identity_photo` upload.
 
@@ -502,7 +502,7 @@ Server-side processing:
 
 ---
 
-## `GET /destinations`
+## `GET /v2/destinations`
 
 List every row in the `destinations` table, sorted by `name` ascending, with the position enum rendered to its human-readable form. Requires bearer token.
 
@@ -533,7 +533,7 @@ Authorization: Bearer <token>
 
 ---
 
-## `POST /visits/{id}/checkout`
+## `POST /v2/visits/{id}/checkout`
 
 Close an active visit. Requires bearer token. Sets `visit.checkout_at=now`, `visit.checkout_gate_id=gate_id`, and `visit.current_position=OUT`. Also clears the visitor's active-visit ban by setting `visitors.banned_at=NULL` and `visitors.banned_reason=NULL` — checkout is the only endpoint that clears the ban.
 
@@ -580,7 +580,7 @@ Gate→position rule for checkout: `1, 2, 3 → OUT`. Other gates are rejected a
 
 ---
 
-## `POST /visits/{id}/transit`
+## `POST /v2/visits/{id}/transit`
 
 Move an active visit into the transit area (or directly to `VIL_2` from `VIL_E` via the inner gate 4 — see geography note). Requires bearer token. Sets `visit.current_position` per the gate→position rule below. No state-machine guard: the server does not verify the visit's current position before transitioning. The visitor's ban state is untouched.
 
@@ -645,7 +645,7 @@ Other gates are rejected as invalid input (400).
 
 ---
 
-## `POST /visits/{id}/transit-enter`
+## `POST /v2/visits/{id}/transit-enter`
 
 Move an active visit out of transit into a destination area (or from `VIL_2` into the exclusive area `VIL_E` via the inner gate 4). Requires bearer token. Sets `visit.current_position` per the gate→position rule below. No state-machine guard: the server does not verify the visit's current position before transitioning. The visitor's ban state is untouched.
 
@@ -708,7 +708,7 @@ Other gates are rejected as invalid input (400).
 
 ---
 
-## `GET /visits/history?gate_id=<id>`
+## `GET /v2/visits/history?gate_id=<id>`
 
 List recent visits associated with the given gate. Requires bearer token.
 
@@ -761,7 +761,7 @@ Authorization: Bearer <token>
 
 ---
 
-## `POST /extract-id`
+## `POST /v2/extract-id`
 
 Proxy a multipart image upload to the external OCR service for Indonesian-ID extraction (KTP / SIM). The handler validates JWT + input shape, forwards the multipart body to `${OCR_URL}/extract-id`, and returns the upstream response verbatim (body bytes + status + `Content-Type`). Mirrors the Laravel `ExtractIdController`.
 

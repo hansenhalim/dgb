@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useActiveGate } from "@/config/activeGate";
 import { useServices } from "@/config/container";
 import { useDestinations } from "@/config/destinations";
+import type { VisitorPreflight } from "@/domain/ports";
 import {
   KEPERLUAN_LAINNYA_INDEX,
   KEPERLUAN_OPTIONS,
@@ -13,6 +14,16 @@ import {
 
 export { KEPERLUAN_OPTIONS } from "@/domain/visitCard";
 export type { Keperluan } from "@/domain/visitCard";
+
+export type PreflightStatus =
+  | "idle"
+  | "loading"
+  | "banned"
+  | "clear"
+  | "error";
+
+/** Debounce window for SIM-length (12-digit) inputs before firing preflight. */
+const PREFLIGHT_DEBOUNCE_MS = 500;
 
 const PHOTO_BYTE_LIMIT = 512 * 1024;
 const PHOTO_FALLBACK_COMPRESS = 0.6;
@@ -40,6 +51,8 @@ export type GuestFormViewModel = {
   setTujuan: (v: string) => void;
   setKeperluan: (v: Keperluan) => void;
   setKeperluanOther: (v: string) => void;
+  preflightStatus: PreflightStatus;
+  preflightVisitor: VisitorPreflight | null;
   canSave: boolean;
   save: () => Promise<SaveResult | null>;
 };
@@ -79,7 +92,7 @@ export function useGuestFormViewModel(
   uid: string | undefined,
   rfidKey: string | undefined,
 ): GuestFormViewModel {
-  const { idExtractor, visits, rfid } = useServices();
+  const { idExtractor, visits, visitors, rfid } = useServices();
   const { activeGate } = useActiveGate();
   const {
     destinations,
@@ -97,6 +110,10 @@ export function useGuestFormViewModel(
   const [keperluanOther, setKeperluanOther] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preflightStatus, setPreflightStatus] =
+    useState<PreflightStatus>("idle");
+  const [preflightVisitor, setPreflightVisitor] =
+    useState<VisitorPreflight | null>(null);
 
   const setNik = useCallback((v: string) => {
     setError(null);
@@ -114,6 +131,95 @@ export function useGuestFormViewModel(
     triedLazyFetchRef.current = true;
     fetchDestinations();
   }, [destinations, destinationsLoading, fetchDestinations]);
+
+  const preflightAbortRef = useRef<AbortController | null>(null);
+  const preflightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preflightRequestIdRef = useRef(0);
+  const preflightCompletedNikRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    // Any change in NIK invalidates the in-flight or scheduled fire.
+    preflightAbortRef.current?.abort();
+    preflightAbortRef.current = null;
+    if (preflightTimerRef.current) {
+      clearTimeout(preflightTimerRef.current);
+      preflightTimerRef.current = null;
+    }
+
+    const len = nik.length;
+    if (len !== 12 && len !== 16) {
+      preflightCompletedNikRef.current = null;
+      setPreflightStatus("idle");
+      setPreflightVisitor(null);
+      return;
+    }
+
+    const padded = nik.padStart(16, "0");
+    if (preflightCompletedNikRef.current === padded) return;
+
+    const fire = () => {
+      const requestId = ++preflightRequestIdRef.current;
+      const abort = new AbortController();
+      preflightAbortRef.current = abort;
+      setPreflightStatus("loading");
+
+      visitors
+        .lookup(padded, abort.signal)
+        .then((result) => {
+          if (preflightRequestIdRef.current !== requestId) return;
+          preflightCompletedNikRef.current = padded;
+          if (!result) {
+            setPreflightVisitor(null);
+            setPreflightStatus("clear");
+            return;
+          }
+          setPreflightVisitor(result);
+          setPreflightStatus(result.bannedAt !== null ? "banned" : "clear");
+
+          // Prefill (fill-if-empty). Setter-function form lets us inspect the
+          // current value at apply time so we don't clobber OCR/manual edits.
+          setNama((curr) => (curr === "" ? result.fullname : curr));
+          const last = result.latestVisit;
+          if (!last) return;
+          if (last.vehiclePlateNumber) {
+            setPlatRaw((curr) =>
+              curr === "" ? formatPlate(last.vehiclePlateNumber) : curr,
+            );
+          }
+          if (last.destinationName) {
+            setTujuan((curr) =>
+              curr === "" ? last.destinationName : curr,
+            );
+          }
+          if (last.purposeOfVisit) {
+            const purpose = last.purposeOfVisit;
+            const isFixed =
+              purpose !== "Lainnya" &&
+              (KEPERLUAN_OPTIONS as readonly string[]).includes(purpose);
+            setKeperluan((curr) => {
+              if (curr !== null) return curr;
+              return isFixed ? (purpose as Keperluan) : "Lainnya";
+            });
+            if (!isFixed) {
+              setKeperluanOther((curr) => (curr === "" ? purpose : curr));
+            }
+          }
+        })
+        .catch(() => {
+          if (abort.signal.aborted) return;
+          if (preflightRequestIdRef.current !== requestId) return;
+          // Silent fail per design — no banner, no save block.
+          setPreflightVisitor(null);
+          setPreflightStatus("error");
+        });
+    };
+
+    if (len === 16) {
+      fire();
+    } else {
+      preflightTimerRef.current = setTimeout(fire, PREFLIGHT_DEBOUNCE_MS);
+    }
+  }, [nik, visitors]);
 
   useEffect(() => {
     if (!rawPhotoUri) return;
@@ -269,6 +375,8 @@ export function useGuestFormViewModel(
     setTujuan,
     setKeperluan,
     setKeperluanOther,
+    preflightStatus,
+    preflightVisitor,
     canSave,
     save,
   };
