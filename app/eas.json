@@ -14,13 +14,19 @@
     "staging": {
       "android": { "buildType": "apk" },
       "env": {
-        "APP_VARIANT": "staging"
+        "APP_VARIANT": "staging",
+        "EXPO_PUBLIC_API_MODE": "real",
+        "EXPO_PUBLIC_RFID_TRANSPORT": "ble",
+        "EXPO_PUBLIC_API_BASE_URL": "https://dgb.hann.my.id"
       }
     },
     "production": {
       "android": { "buildType": "apk" },
       "env": {
-        "APP_VARIANT": "production"
+        "APP_VARIANT": "production",
+        "EXPO_PUBLIC_API_MODE": "real",
+        "EXPO_PUBLIC_RFID_TRANSPORT": "ble",
+        "EXPO_PUBLIC_API_BASE_URL": "https://dgb.p3villacitra.com"
       }
     }
   },

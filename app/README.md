@@ -16,6 +16,21 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+## Build a release APK
+
+Run a local EAS build against the desired profile:
+
+```bash
+npx eas-cli@latest build --local -p android --profile staging
+# or
+npx eas-cli@latest build --local -p android --profile production
+```
+
+After the build finishes, rename the output APK to match the convention
+`DGB_<Profile>_v<version>.apk` — e.g. `DGB_Staging_v2.0.0.apk` or
+`DGB_Production_v2.0.0.apk`. The version must match the `version` field in
+[`package.json`](./package.json).
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
