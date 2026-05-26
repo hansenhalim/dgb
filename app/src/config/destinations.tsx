@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -11,6 +12,7 @@ import {
 import type { Destination } from "@/domain/entities";
 
 import { useServices } from "./container";
+import { useSession } from "./session";
 
 type DestinationsContextValue = {
   destinations: Destination[] | null;
@@ -24,7 +26,8 @@ const DestinationsContext = createContext<DestinationsContextValue | null>(
 );
 
 export function DestinationsProvider({ children }: { children: ReactNode }) {
-  const { session } = useServices();
+  const { session: sessionRepo } = useServices();
+  const { session } = useSession();
   const [destinations, setDestinations] = useState<Destination[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -35,7 +38,7 @@ export function DestinationsProvider({ children }: { children: ReactNode }) {
     inFlightRef.current = true;
     setLoading(true);
     setError(null);
-    session
+    sessionRepo
       .listDestinations()
       .then((list) => {
         setDestinations(list);
@@ -47,7 +50,18 @@ export function DestinationsProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         inFlightRef.current = false;
       });
-  }, [session]);
+  }, [sessionRepo]);
+
+  // Fetch when a session appears; clear on logout. Feature screens still call
+  // `fetch()` lazily as a safety net if state was cleared mid-navigation.
+  useEffect(() => {
+    if (!session) {
+      setDestinations(null);
+      setError(null);
+      return;
+    }
+    fetch();
+  }, [session, fetch]);
 
   const value = useMemo<DestinationsContextValue>(
     () => ({ destinations, loading, error, fetch }),

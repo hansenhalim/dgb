@@ -12,7 +12,6 @@ import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboa
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppStatusBar, type AppStatusBarHandle } from "@/components/AppStatusBar";
-import { useDestinations } from "@/config/destinations";
 import { useSession } from "@/config/session";
 import { useTheme } from "@/theme/theme";
 import { type Colors, fonts, radius } from "@/theme/tokens";
@@ -22,7 +21,6 @@ import { useLoginViewModel } from "./useLoginViewModel";
 export default function LoginScreen() {
   const vm = useLoginViewModel();
   const { setSession } = useSession();
-  const { fetch: fetchDestinations } = useDestinations();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const statusBarRef = useRef<AppStatusBarHandle>(null);
@@ -32,10 +30,9 @@ export default function LoginScreen() {
     const session = await vm.submit();
     if (session) {
       setSession(session);
-      fetchDestinations();
       router.replace("/");
     }
-  }, [vm, setSession, fetchDestinations]);
+  }, [vm, setSession]);
 
   const onButtonPress =
     vm.cta.intent === "openReader"

@@ -13,6 +13,7 @@ import {
 import type { Gate } from "@/domain/entities";
 
 import { useServices } from "./container";
+import { useSession } from "./session";
 
 const STORAGE_KEY = "dgb.activeGate.v1";
 
@@ -31,14 +32,14 @@ type ActiveGateContextValue = {
 const ActiveGateContext = createContext<ActiveGateContextValue | null>(null);
 
 export function ActiveGateProvider({ children }: { children: ReactNode }) {
-  const { session } = useServices();
+  const { session: sessionRepo } = useServices();
+  const { session } = useSession();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [storageReady, setStorageReady] = useState(false);
   const [gates, setGates] = useState<Gate[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const inFlightRef = useRef(false);
-  const initialFetchRef = useRef(false);
 
   useEffect(() => {
     SecureStore.getItemAsync(STORAGE_KEY)
@@ -57,7 +58,7 @@ export function ActiveGateProvider({ children }: { children: ReactNode }) {
     inFlightRef.current = true;
     setLoading(true);
     setError(null);
-    session
+    sessionRepo
       .listGates()
       .then((list) => {
         setGates(list);
@@ -69,16 +70,19 @@ export function ActiveGateProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         inFlightRef.current = false;
       });
-  }, [session]);
+  }, [sessionRepo]);
 
-  // Once storage has loaded, fetch the gates list. We need it to resolve `activeGate`
-  // from a stored selectedId, and to seed a first selection when there isn't one.
+  // Fetch when we have a session (and storage has loaded so we can match the
+  // stored selection without racing the auto-select). Clear on logout.
   useEffect(() => {
     if (!storageReady) return;
-    if (initialFetchRef.current) return;
-    initialFetchRef.current = true;
+    if (!session) {
+      setGates(null);
+      setError(null);
+      return;
+    }
     fetchGates();
-  }, [storageReady, fetchGates]);
+  }, [storageReady, session, fetchGates]);
 
   useEffect(() => {
     if (selectedId !== null) return;

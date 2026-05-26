@@ -118,10 +118,11 @@ export class ApiVisitsGateway implements VisitsGateway {
     });
   }
 
-  async checkout(visitId: string): Promise<void> {
+  async checkout(visitId: string, gateId: number): Promise<void> {
     const session = await loadSession();
     await request<unknown>(`/v2/visits/${visitId}/checkout`, {
       method: "POST",
+      body: JSON.stringify({ gate_id: gateId }),
       token: session?.token ?? null,
     });
   }

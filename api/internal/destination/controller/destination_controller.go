@@ -30,7 +30,7 @@ func (c *DestinationController) List(ctx *echo.Context) error {
 
 	items := make([]destinationItem, len(destinations))
 	for i, d := range destinations {
-		items[i] = destinationItem{Name: d.Name, Position: positionHuman(d.Position)}
+		items[i] = destinationItem{Name: d.Name, Position: positionCode(d.Position)}
 	}
 
 	return ctx.JSON(http.StatusOK, listDestinationsResponse{
@@ -39,14 +39,17 @@ func (c *DestinationController) List(ctx *echo.Context) error {
 	})
 }
 
-func positionHuman(p entity.Position) string {
+// positionCode emits the CardArea enum strings the mobile app expects
+// (see app/src/domain/visitCard.ts: ENUM_BY_AREA). Stays in sync with
+// the visitor controller's encoding of the same enum.
+func positionCode(p entity.Position) string {
 	switch p {
 	case entity.PositionVilla1:
-		return "villa1"
+		return "VIL_1"
 	case entity.PositionVilla2:
-		return "villa2"
+		return "VIL_2"
 	case entity.PositionExclusive:
-		return "exclusive"
+		return "VIL_E"
 	default:
 		return ""
 	}

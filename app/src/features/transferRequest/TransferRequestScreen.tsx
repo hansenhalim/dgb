@@ -38,7 +38,7 @@ export default function TransferRequestScreen() {
   return (
     <SafeAreaView
       style={styles.screen}
-      edges={["top", "left", "right", "bottom"]}
+      edges={["top", "left", "right"]}
     >
       <View style={styles.header}>
         <Pressable

@@ -1,6 +1,13 @@
 import { router } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -108,6 +115,13 @@ export default function HomeScreen() {
         style={styles.content}
         contentContainerStyle={styles.contentInner}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={vm.refreshing}
+            onRefresh={vm.reload}
+            tintColor={colors.inkMuted}
+          />
+        }
       >
         <View style={styles.statRow}>
           <Pressable

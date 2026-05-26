@@ -40,7 +40,7 @@ export interface VisitsGateway {
   /** Fire-and-forget on the caller side; this method itself just dispatches the request. */
   pulseGate(input: PulseGateInput): Promise<void>;
   /** Mark a visit as ended server-side. Caller wipes the card separately. */
-  checkout(visitId: string): Promise<void>;
+  checkout(visitId: string, gateId: number): Promise<void>;
   /** Record a transit / area-change event. Server returns the new card state to write. */
   transit(visitId: string, gateId: number): Promise<CardStateResponse>;
   /** Record a re-entry. Server returns the new card state to write. */

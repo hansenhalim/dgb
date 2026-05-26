@@ -144,9 +144,10 @@ export default function GuestFormScreen() {
             <View style={styles.field}>
               <Text style={styles.label}>Nama</Text>
               <TextInput
+                autoCapitalize="characters"
                 style={[styles.input, vm.isProcessing && styles.inputDisabled]}
                 value={vm.nama}
-                onChangeText={vm.setNama}
+                onChangeText={(val) => vm.setNama(val.toUpperCase())}
                 autoCorrect={false}
                 placeholder={
                   vm.isProcessing ? "Memproses identitas…" : "JOHN DOE"

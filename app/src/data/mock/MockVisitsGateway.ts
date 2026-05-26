@@ -45,7 +45,7 @@ export class MockVisitsGateway implements VisitsGateway {
     await delay(120);
   }
 
-  async checkout(_visitId: string): Promise<void> {
+  async checkout(_visitId: string, _gateId: number): Promise<void> {
     await delay(200);
   }
 

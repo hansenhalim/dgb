@@ -2,9 +2,12 @@ package controller
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v5"
@@ -68,9 +71,19 @@ func (c *ExtractIDController) Extract(ctx *echo.Context) error {
 	}
 	defer f.Close()
 
+	// Preserve the original Content-Type so the OCR service's image/* check
+	// passes. multipart.Writer.CreateFormFile hardcodes application/octet-stream.
+	contentType := fileHeader.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		return httperror.New(http.StatusUnprocessableEntity, "Uploaded file must be an image.")
+	}
+
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
-	part, err := writer.CreateFormFile("image", fileHeader.Filename)
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="image"; filename=%q`, fileHeader.Filename))
+	partHeader.Set("Content-Type", contentType)
+	part, err := writer.CreatePart(partHeader)
 	if err != nil {
 		return err
 	}

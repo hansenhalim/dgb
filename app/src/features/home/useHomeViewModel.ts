@@ -12,6 +12,7 @@ import type {
 
 export type HomeViewModel = {
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
   gate: Gate | null;
   gates: Gate[] | null;
@@ -31,6 +32,7 @@ export function useHomeViewModel(): HomeViewModel {
   const activeGateId = activeGate?.id ?? null;
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cardStock, setCardStock] = useState<CardStock | null>(null);
   const [visits, setVisits] = useState<VisitSummary | null>(null);
@@ -38,23 +40,30 @@ export function useHomeViewModel(): HomeViewModel {
     null,
   );
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const dashboard = await session.getDashboard();
-      setCardStock(dashboard.cardStock);
-      setVisits(dashboard.visits);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal memuat data");
-    } finally {
-      setLoading(false);
-    }
-  }, [session]);
+  const load = useCallback(
+    async (mode: "initial" | "refresh") => {
+      if (mode === "refresh") setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      try {
+        const dashboard = await session.getDashboard();
+        setCardStock(dashboard.cardStock);
+        setVisits(dashboard.visits);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Gagal memuat data");
+      } finally {
+        if (mode === "refresh") setRefreshing(false);
+        else setLoading(false);
+      }
+    },
+    [session],
+  );
 
   useEffect(() => {
-    load();
+    load("initial");
   }, [load]);
+
+  const reload = useCallback(() => load("refresh"), [load]);
 
   // Re-check the inbox each time home regains focus (post-respond, post-create, etc.).
   useFocusEffect(
@@ -83,6 +92,7 @@ export function useHomeViewModel(): HomeViewModel {
 
   return {
     loading,
+    refreshing,
     error,
     gate: activeGate,
     gates,
@@ -90,7 +100,7 @@ export function useHomeViewModel(): HomeViewModel {
     visits,
     lowStock,
     pendingIncoming,
-    reload: load,
+    reload,
     selectGate,
   };
 }

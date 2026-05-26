@@ -504,7 +504,7 @@ Server-side processing:
 
 ## `GET /v2/destinations`
 
-List every row in the `destinations` table, sorted by `name` ascending, with the position enum rendered to its human-readable form. Requires bearer token.
+List every row in the `destinations` table, sorted by `name` ascending. Requires bearer token.
 
 ### Request
 
@@ -520,14 +520,14 @@ Authorization: Bearer <token>
 {
   "message": "Destinations retrieved successfully.",
   "data": [
-    { "name": "AA-1", "position": "villa1" },
-    { "name": "AA-2", "position": "villa2" },
-    { "name": "AA-3", "position": "exclusive" }
+    { "name": "AA-1", "position": "VIL_1" },
+    { "name": "AA-2", "position": "VIL_2" },
+    { "name": "AA-3", "position": "VIL_E" }
   ]
 }
 ```
 
-`position` is one of `"villa1"`, `"villa2"`, `"exclusive"`, mapped from `destinations.position` (`VIL_1` / `VIL_2` / `VIL_E`).
+`position` is the raw `destinations.position` enum (`VIL_1` / `VIL_2` / `VIL_E`) — the same CardArea encoding used by the visit endpoints. Client decodes it via its `ENUM_BY_AREA` map.
 
 **`401 Unauthorized`** — token missing/malformed/expired.
 

@@ -86,13 +86,18 @@ export function useVisitPreviewViewModel({
   const checkout = useCallback(async () => {
     if (!decodedOrError.decoded) return;
     if (phase !== "idle") return;
+    if (!activeGate) {
+      setFailure({ kind: "checkoutApi", message: "Pilih gerbang aktif dulu." });
+      return;
+    }
     const visitId = decodedOrError.decoded.visitId;
+    const gateId = activeGate.id;
     setPhase("checkingOut");
     setFailure(null);
     try {
       if (!apiCommitted) {
         try {
-          await visits.checkout(visitId);
+          await visits.checkout(visitId, gateId);
           setApiCommitted(true);
         } catch (e) {
           setFailure({
@@ -116,7 +121,15 @@ export function useVisitPreviewViewModel({
     } finally {
       setPhase("idle");
     }
-  }, [apiCommitted, decodedOrError.decoded, phase, rfid, rfidKey, visits]);
+  }, [
+    activeGate,
+    apiCommitted,
+    decodedOrError.decoded,
+    phase,
+    rfid,
+    rfidKey,
+    visits,
+  ]);
 
   const transitEnter = useCallback(async () => {
     if (!decodedOrError.decoded) return;

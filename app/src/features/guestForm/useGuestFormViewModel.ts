@@ -176,11 +176,13 @@ export function useGuestFormViewModel(
           setPreflightVisitor(result);
           setPreflightStatus(result.bannedAt !== null ? "banned" : "clear");
 
-          // Prefill (fill-if-empty). Setter-function form lets us inspect the
-          // current value at apply time so we don't clobber OCR/manual edits.
-          setNama((curr) => (curr === "" ? result.fullname : curr));
+          // Nama is server-authoritative: override OCR/manual entry. OCR can
+          // mis-read characters (0/O, 1/I) and the server record is canonical.
+          setNama(result.fullname);
           const last = result.latestVisit;
           if (!last) return;
+          // Remaining fields stay fill-if-empty: this visit's plate/destination/
+          // purpose may differ from history, so don't clobber what's there.
           if (last.vehiclePlateNumber) {
             setPlatRaw((curr) =>
               curr === "" ? formatPlate(last.vehiclePlateNumber) : curr,
