@@ -31,6 +31,25 @@ After the build finishes, rename the output APK to match the convention
 `DGB_Production_v2.0.0.apk`. The version must match the `version` field in
 [`package.json`](./package.json).
 
+## Ship an OTA update
+
+JS/asset-only changes can be pushed to installed `staging` / `production`
+APKs without a rebuild via EAS Update. Each of those build profiles is bound
+to a same-named channel, and `runtimeVersion.policy` is `appVersion`, so
+updates only reach builds whose `version` in [`package.json`](./package.json)
+matches.
+
+```bash
+npx eas-cli@latest update --channel staging    --message "describe change" --environment preview
+npx eas-cli@latest update --channel production --message "describe change" --environment production
+```
+
+Native changes or `version` bumps cross the runtime version and require a
+fresh APK build — they cannot ship as OTA.
+
+The `development` profile is intentionally not on a channel; the dev client
+loads JS from the local Metro server, not from EAS Update.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

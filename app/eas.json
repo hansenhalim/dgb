@@ -12,6 +12,7 @@
       }
     },
     "staging": {
+      "channel": "staging",
       "android": { "buildType": "apk" },
       "env": {
         "APP_VARIANT": "staging",
@@ -21,6 +22,7 @@
       }
     },
     "production": {
+      "channel": "production",
       "android": { "buildType": "apk" },
       "env": {
         "APP_VARIANT": "production",
