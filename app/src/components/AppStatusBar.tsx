@@ -9,6 +9,7 @@ import { type Colors, fonts } from "@/theme/tokens";
 
 import { Moon, Sun } from "./icons";
 import { ReaderSheet } from "./ReaderSheet";
+import { UpdateBanner } from "./UpdateBanner";
 
 const appVersion = Constants.expoConfig?.version ?? "";
 
@@ -85,6 +86,7 @@ export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
 
   return (
     <>
+      <UpdateBanner />
       <View style={styles.bar}>
         <Text style={styles.text}>v{appVersion}</Text>
         <View style={styles.right}>

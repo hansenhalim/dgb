@@ -1,7 +1,9 @@
 import LogRocket from "@logrocket/react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import * as Updates from "expo-updates";
+import { useEffect, useRef } from "react";
+import { AppState } from "react-native";
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -37,6 +39,36 @@ function ReaderBootstrap() {
       rfid.connect().catch(() => { });
     }
   }, [rfid]);
+  return null;
+}
+
+const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+
+function UpdatesBootstrap() {
+  const lastCheckedAt = useRef(0);
+
+  useEffect(() => {
+    if (!Updates.isEnabled) return;
+
+    async function check() {
+      const now = Date.now();
+      if (now - lastCheckedAt.current < UPDATE_CHECK_INTERVAL_MS) return;
+      lastCheckedAt.current = now;
+      try {
+        const result = await Updates.checkForUpdateAsync();
+        if (result.isAvailable) await Updates.fetchUpdateAsync();
+      } catch {
+        lastCheckedAt.current = 0;
+      }
+    }
+
+    check();
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") check();
+    });
+    return () => sub.remove();
+  }, []);
+
   return null;
 }
 
@@ -77,6 +109,7 @@ export default function RootLayout() {
                 <SafeAreaProvider>
                   <ThemedShell>
                     <ReaderBootstrap />
+                    <UpdatesBootstrap />
                     <LogRocketIdentify />
                     <AuthGate>
                       <Stack screenOptions={{ headerShown: false }} />

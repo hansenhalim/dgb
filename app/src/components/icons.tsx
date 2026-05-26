@@ -86,6 +86,17 @@ export function Moon({ size = 16, color = "currentColor" }: IconProps) {
   );
 }
 
+export function Sparkle({ size = 12, color = "currentColor" }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 12 12" fill="none">
+      <Path
+        d="M6 1l1.2 3.3L10.5 5.5 7.2 6.7 6 10l-1.2-3.3L1.5 5.5l3.3-1.2L6 1z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
 export function LogOut({ size = 16, color = "currentColor" }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 16 16" fill="none">

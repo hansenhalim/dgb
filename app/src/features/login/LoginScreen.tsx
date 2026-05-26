@@ -37,9 +37,9 @@ export default function LoginScreen() {
   const onButtonPress =
     vm.cta.intent === "openReader"
       ? () => {
-          Keyboard.dismiss();
-          statusBarRef.current?.openReaderSheet();
-        }
+        Keyboard.dismiss();
+        statusBarRef.current?.openReaderSheet();
+      }
       : onSubmit;
 
   return (
@@ -52,7 +52,7 @@ export default function LoginScreen() {
             <Text style={styles.brandKey}>DIGITAL GUESTBOOK</Text>
             <Text style={styles.title}>Masuk</Text>
             <Text style={styles.subtitle}>
-              Masukkan PIN 6 digit lalu pindai kartu RFID Anda.
+              Masukkan PIN 6 digit lalu scan kartu RFID Anda.
             </Text>
           </View>
 
