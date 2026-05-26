@@ -1,3 +1,65 @@
+# api
+
+Go (Echo + GORM) backend for the DGB gate-management system. Replaces the legacy Laravel service; the wire contract under `/v2/*` is preserved so existing clients keep working.
+
+## Development
+
+### Prerequisites
+
+- Go 1.26+
+- PostgreSQL 14+ (a running instance reachable at `DB_HOST:DB_PORT`)
+- The schema from the legacy Laravel app — this service does not run migrations; it expects the existing `dgb` database to already be provisioned.
+
+### Setup
+
+```bash
+cd api
+cp .env.example .env
+# fill in APP_KEY, DB_PASSWORD, JWT_SECRET, GATE_*_WEBHOOK_URL, OCR_URL as needed
+go mod download
+```
+
+`APP_KEY` must be the same key the Laravel service uses (base64-encoded 32-byte key prefixed with `base64:`), otherwise visitor identity photos encrypted by one service can't be decrypted by the other.
+
+### Run
+
+```bash
+go run ./cmd/api
+```
+
+The server listens on `APP_PORT` (default `8080`). Logs go to stdout as JSON via `slog`.
+
+### Test
+
+```bash
+go test ./...
+```
+
+Mocks live next to their interfaces and are regenerated with [mockery](https://github.com/vektra/mockery):
+
+```bash
+mockery
+```
+
+(config in `.mockery.yml`)
+
+### Build
+
+Local binary:
+
+```bash
+go build -o bin/api ./cmd/api
+```
+
+Container image (multi-stage, scratch base):
+
+```bash
+docker build -t dgb-api .
+docker run --rm -p 8080:8080 --env-file .env dgb-api
+```
+
+---
+
 # API
 
 All responses use `application/json` and a top-level `message` field (`POST /v2/extract-id` is the exception — its body is the upstream OCR service's response forwarded verbatim).
