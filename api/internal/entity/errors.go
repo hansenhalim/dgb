@@ -12,7 +12,6 @@ var (
 	ErrGateNotFound = errors.New("gate not found")
 
 	ErrTransferNotFound         = errors.New("transfer request not found")
-	ErrTransferAlreadyPending   = errors.New("transfer request already pending for one of these gates")
 	ErrTransferAlreadyResponded = errors.New("transfer request already responded")
 	ErrInsufficientQuota        = errors.New("source gate quota is less than amount")
 	ErrInvalidTransferGates     = errors.New("invalid transfer gates")

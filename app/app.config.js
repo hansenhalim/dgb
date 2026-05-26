@@ -23,24 +23,31 @@ export default {
     slug: "dgb-app",
     version: "2.0.0",
     orientation: "portrait",
+    updates: {
+      url: "https://u.expo.dev/6668960c-e087-49a7-988d-a0d71202c133",
+    },
+    runtimeVersion: {
+      policy: "appVersion",
+    },
     icon: "./assets/images/icon.png",
     scheme: "dgbapp",
     userInterfaceStyle: "automatic",
     android: {
       adaptiveIcon: {
         backgroundColor: v.backgroundColor,
-        foregroundImage: "./assets/images/icon-foreground.svg",
+        foregroundImage: "./assets/images/icon-foreground.png",
       },
       package: v.package,
     },
     plugins: [
+      "@logrocket/react-native",
       "expo-router",
       [
         "expo-splash-screen",
         {
           backgroundColor: "#FFFFFF",
           android: {
-            image: "./assets/images/splash-icon.svg",
+            image: "./assets/images/icon.png",
             imageWidth: 200,
           },
         },
@@ -58,6 +65,7 @@ export default {
         "expo-build-properties",
         {
           android: {
+            minSdkVersion: 25,
             buildArchs: ["arm64-v8a"],
             enableMinifyInReleaseBuilds: true,
             enableShrinkResourcesInReleaseBuilds: true,

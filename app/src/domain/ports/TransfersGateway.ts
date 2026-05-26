@@ -9,8 +9,8 @@ export type CreateTransferInput = {
 export type TransferRespondStatus = "confirm" | "reject";
 
 export interface TransfersGateway {
-  /** Returns the single pending request involving this gate, or null when none. */
-  getPending(gateId: number): Promise<TransferRequest | null>;
+  /** Returns all pending requests involving this gate. Empty array when none. */
+  getPending(gateId: number): Promise<TransferRequest[]>;
   create(input: CreateTransferInput): Promise<void>;
   respond(id: number, status: TransferRespondStatus): Promise<void>;
 }

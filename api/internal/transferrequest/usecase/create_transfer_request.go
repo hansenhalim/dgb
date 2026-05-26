@@ -33,14 +33,6 @@ func NewCreateTransferRequest(
 }
 
 func (u *createTransferRequest) Execute(ctx context.Context, in CreateTransferRequestInput) error {
-	exists, err := u.repo.ExistsPendingForGates(ctx, in.FromGateID, in.ToGateID)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return entity.ErrTransferAlreadyPending
-	}
-
 	fromGate, err := u.gateRepo.FindByID(ctx, in.FromGateID)
 	if err != nil {
 		if errors.Is(err, entity.ErrGateNotFound) {

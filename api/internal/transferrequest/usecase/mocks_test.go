@@ -332,46 +332,47 @@ func (_c *MockTransferRequestRepository_Create_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
-// ExistsPendingForGates provides a mock function for the type MockTransferRequestRepository
-func (_mock *MockTransferRequestRepository) ExistsPendingForGates(ctx context.Context, fromGateID int16, toGateID int16) (bool, error) {
-	ret := _mock.Called(ctx, fromGateID, toGateID)
+// FindAllPendingByGateID provides a mock function for the type MockTransferRequestRepository
+func (_mock *MockTransferRequestRepository) FindAllPendingByGateID(ctx context.Context, gateID int16) ([]*entity.TransferRequest, error) {
+	ret := _mock.Called(ctx, gateID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for ExistsPendingForGates")
+		panic("no return value specified for FindAllPendingByGateID")
 	}
 
-	var r0 bool
+	var r0 []*entity.TransferRequest
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int16, int16) (bool, error)); ok {
-		return returnFunc(ctx, fromGateID, toGateID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int16) ([]*entity.TransferRequest, error)); ok {
+		return returnFunc(ctx, gateID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int16, int16) bool); ok {
-		r0 = returnFunc(ctx, fromGateID, toGateID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int16) []*entity.TransferRequest); ok {
+		r0 = returnFunc(ctx, gateID)
 	} else {
-		r0 = ret.Get(0).(bool)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*entity.TransferRequest)
+		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int16, int16) error); ok {
-		r1 = returnFunc(ctx, fromGateID, toGateID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int16) error); ok {
+		r1 = returnFunc(ctx, gateID)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockTransferRequestRepository_ExistsPendingForGates_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ExistsPendingForGates'
-type MockTransferRequestRepository_ExistsPendingForGates_Call struct {
+// MockTransferRequestRepository_FindAllPendingByGateID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindAllPendingByGateID'
+type MockTransferRequestRepository_FindAllPendingByGateID_Call struct {
 	*mock.Call
 }
 
-// ExistsPendingForGates is a helper method to define mock.On call
+// FindAllPendingByGateID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - fromGateID int16
-//   - toGateID int16
-func (_e *MockTransferRequestRepository_Expecter) ExistsPendingForGates(ctx interface{}, fromGateID interface{}, toGateID interface{}) *MockTransferRequestRepository_ExistsPendingForGates_Call {
-	return &MockTransferRequestRepository_ExistsPendingForGates_Call{Call: _e.mock.On("ExistsPendingForGates", ctx, fromGateID, toGateID)}
+//   - gateID int16
+func (_e *MockTransferRequestRepository_Expecter) FindAllPendingByGateID(ctx interface{}, gateID interface{}) *MockTransferRequestRepository_FindAllPendingByGateID_Call {
+	return &MockTransferRequestRepository_FindAllPendingByGateID_Call{Call: _e.mock.On("FindAllPendingByGateID", ctx, gateID)}
 }
 
-func (_c *MockTransferRequestRepository_ExistsPendingForGates_Call) Run(run func(ctx context.Context, fromGateID int16, toGateID int16)) *MockTransferRequestRepository_ExistsPendingForGates_Call {
+func (_c *MockTransferRequestRepository_FindAllPendingByGateID_Call) Run(run func(ctx context.Context, gateID int16)) *MockTransferRequestRepository_FindAllPendingByGateID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -381,25 +382,20 @@ func (_c *MockTransferRequestRepository_ExistsPendingForGates_Call) Run(run func
 		if args[1] != nil {
 			arg1 = args[1].(int16)
 		}
-		var arg2 int16
-		if args[2] != nil {
-			arg2 = args[2].(int16)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
 }
 
-func (_c *MockTransferRequestRepository_ExistsPendingForGates_Call) Return(b bool, err error) *MockTransferRequestRepository_ExistsPendingForGates_Call {
-	_c.Call.Return(b, err)
+func (_c *MockTransferRequestRepository_FindAllPendingByGateID_Call) Return(transferRequests []*entity.TransferRequest, err error) *MockTransferRequestRepository_FindAllPendingByGateID_Call {
+	_c.Call.Return(transferRequests, err)
 	return _c
 }
 
-func (_c *MockTransferRequestRepository_ExistsPendingForGates_Call) RunAndReturn(run func(ctx context.Context, fromGateID int16, toGateID int16) (bool, error)) *MockTransferRequestRepository_ExistsPendingForGates_Call {
+func (_c *MockTransferRequestRepository_FindAllPendingByGateID_Call) RunAndReturn(run func(ctx context.Context, gateID int16) ([]*entity.TransferRequest, error)) *MockTransferRequestRepository_FindAllPendingByGateID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -468,74 +464,6 @@ func (_c *MockTransferRequestRepository_FindByID_Call) Return(transferRequest *e
 }
 
 func (_c *MockTransferRequestRepository_FindByID_Call) RunAndReturn(run func(ctx context.Context, id int64) (*entity.TransferRequest, error)) *MockTransferRequestRepository_FindByID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// FindPendingByGateID provides a mock function for the type MockTransferRequestRepository
-func (_mock *MockTransferRequestRepository) FindPendingByGateID(ctx context.Context, gateID int16) (*entity.TransferRequest, error) {
-	ret := _mock.Called(ctx, gateID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for FindPendingByGateID")
-	}
-
-	var r0 *entity.TransferRequest
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int16) (*entity.TransferRequest, error)); ok {
-		return returnFunc(ctx, gateID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int16) *entity.TransferRequest); ok {
-		r0 = returnFunc(ctx, gateID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.TransferRequest)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int16) error); ok {
-		r1 = returnFunc(ctx, gateID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockTransferRequestRepository_FindPendingByGateID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindPendingByGateID'
-type MockTransferRequestRepository_FindPendingByGateID_Call struct {
-	*mock.Call
-}
-
-// FindPendingByGateID is a helper method to define mock.On call
-//   - ctx context.Context
-//   - gateID int16
-func (_e *MockTransferRequestRepository_Expecter) FindPendingByGateID(ctx interface{}, gateID interface{}) *MockTransferRequestRepository_FindPendingByGateID_Call {
-	return &MockTransferRequestRepository_FindPendingByGateID_Call{Call: _e.mock.On("FindPendingByGateID", ctx, gateID)}
-}
-
-func (_c *MockTransferRequestRepository_FindPendingByGateID_Call) Run(run func(ctx context.Context, gateID int16)) *MockTransferRequestRepository_FindPendingByGateID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 int16
-		if args[1] != nil {
-			arg1 = args[1].(int16)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockTransferRequestRepository_FindPendingByGateID_Call) Return(transferRequest *entity.TransferRequest, err error) *MockTransferRequestRepository_FindPendingByGateID_Call {
-	_c.Call.Return(transferRequest, err)
-	return _c
-}
-
-func (_c *MockTransferRequestRepository_FindPendingByGateID_Call) RunAndReturn(run func(ctx context.Context, gateID int16) (*entity.TransferRequest, error)) *MockTransferRequestRepository_FindPendingByGateID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -637,23 +565,23 @@ func (_m *MockCheckTransferRequestUsecase) EXPECT() *MockCheckTransferRequestUse
 }
 
 // Execute provides a mock function for the type MockCheckTransferRequestUsecase
-func (_mock *MockCheckTransferRequestUsecase) Execute(ctx context.Context, gateID int16) (*entity.TransferRequest, error) {
+func (_mock *MockCheckTransferRequestUsecase) Execute(ctx context.Context, gateID int16) ([]*entity.TransferRequest, error) {
 	ret := _mock.Called(ctx, gateID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Execute")
 	}
 
-	var r0 *entity.TransferRequest
+	var r0 []*entity.TransferRequest
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int16) (*entity.TransferRequest, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int16) ([]*entity.TransferRequest, error)); ok {
 		return returnFunc(ctx, gateID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int16) *entity.TransferRequest); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int16) []*entity.TransferRequest); ok {
 		r0 = returnFunc(ctx, gateID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.TransferRequest)
+			r0 = ret.Get(0).([]*entity.TransferRequest)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, int16) error); ok {
@@ -694,12 +622,12 @@ func (_c *MockCheckTransferRequestUsecase_Execute_Call) Run(run func(ctx context
 	return _c
 }
 
-func (_c *MockCheckTransferRequestUsecase_Execute_Call) Return(transferRequest *entity.TransferRequest, err error) *MockCheckTransferRequestUsecase_Execute_Call {
-	_c.Call.Return(transferRequest, err)
+func (_c *MockCheckTransferRequestUsecase_Execute_Call) Return(transferRequests []*entity.TransferRequest, err error) *MockCheckTransferRequestUsecase_Execute_Call {
+	_c.Call.Return(transferRequests, err)
 	return _c
 }
 
-func (_c *MockCheckTransferRequestUsecase_Execute_Call) RunAndReturn(run func(ctx context.Context, gateID int16) (*entity.TransferRequest, error)) *MockCheckTransferRequestUsecase_Execute_Call {
+func (_c *MockCheckTransferRequestUsecase_Execute_Call) RunAndReturn(run func(ctx context.Context, gateID int16) ([]*entity.TransferRequest, error)) *MockCheckTransferRequestUsecase_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }

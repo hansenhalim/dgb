@@ -19,45 +19,41 @@ func NewTransferRequestRepository(db *gorm.DB) *TransferRequestRepository {
 	return &TransferRequestRepository{db: db}
 }
 
-func (r *TransferRequestRepository) FindPendingByGateID(ctx context.Context, gateID int16) (*entity.TransferRequest, error) {
-	var row transferRequest
-	err := r.db.WithContext(ctx).
+func (r *TransferRequestRepository) FindAllPendingByGateID(ctx context.Context, gateID int16) ([]*entity.TransferRequest, error) {
+	var rows []transferRequest
+	if err := r.db.WithContext(ctx).
 		Where("status = ?", statusToDB(entity.TransferStatusPending)).
 		Where("from_gate_id = ? OR to_gate_id = ?", gateID, gateID).
-		First(&row).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+		Order("id ASC").
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
 		return nil, nil
 	}
-	if err != nil {
-		return nil, err
+
+	gateIDs := make(map[int16]struct{}, len(rows)*2)
+	for i := range rows {
+		gateIDs[rows[i].FromGateID] = struct{}{}
+		gateIDs[rows[i].ToGateID] = struct{}{}
+	}
+	gateByID := make(map[int16]*entity.Gate, len(gateIDs))
+	for id := range gateIDs {
+		g, err := r.findGate(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		gateByID[id] = g
 	}
 
-	from, err := r.findGate(ctx, row.FromGateID)
-	if err != nil {
-		return nil, err
+	out := make([]*entity.TransferRequest, len(rows))
+	for i := range rows {
+		t := toEntity(&rows[i])
+		t.FromGate = gateByID[rows[i].FromGateID]
+		t.ToGate = gateByID[rows[i].ToGateID]
+		out[i] = t
 	}
-	to, err := r.findGate(ctx, row.ToGateID)
-	if err != nil {
-		return nil, err
-	}
-
-	t := toEntity(&row)
-	t.FromGate = from
-	t.ToGate = to
-	return t, nil
-}
-
-func (r *TransferRequestRepository) ExistsPendingForGates(ctx context.Context, fromGateID, toGateID int16) (bool, error) {
-	var count int64
-	err := r.db.WithContext(ctx).
-		Model(&transferRequest{}).
-		Where("status = ?", statusToDB(entity.TransferStatusPending)).
-		Where("from_gate_id = ? OR to_gate_id = ?", fromGateID, toGateID).
-		Count(&count).Error
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
+	return out, nil
 }
 
 func (r *TransferRequestRepository) Create(ctx context.Context, t *entity.TransferRequest) error {

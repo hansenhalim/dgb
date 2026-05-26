@@ -1,5 +1,5 @@
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { useActiveGate } from "@/config/activeGate";
 import { useServices } from "@/config/container";
@@ -7,17 +7,20 @@ import type { TransferRequest } from "@/domain/entities";
 
 export type TransferDirection = "incoming" | "outgoing";
 
+export type TransferRequestItem = TransferRequest & {
+  direction: TransferDirection;
+};
+
 export type TransferRequestViewModel = {
   loading: boolean;
   refreshing: boolean;
   error: string | null;
-  pending: TransferRequest | null;
-  direction: TransferDirection | null;
-  responding: boolean;
+  items: TransferRequestItem[];
+  respondingId: number | null;
   respondError: string | null;
   reload: () => Promise<void>;
-  confirm: () => Promise<void>;
-  reject: () => Promise<void>;
+  confirm: (id: number) => Promise<void>;
+  reject: (id: number) => Promise<void>;
 };
 
 export function useTransferRequestViewModel(): TransferRequestViewModel {
@@ -28,8 +31,8 @@ export function useTransferRequestViewModel(): TransferRequestViewModel {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState<TransferRequest | null>(null);
-  const [responding, setResponding] = useState(false);
+  const [pending, setPending] = useState<TransferRequest[]>([]);
+  const [respondingId, setRespondingId] = useState<number | null>(null);
   const [respondError, setRespondError] = useState<string | null>(null);
 
   const load = useCallback(
@@ -59,40 +62,41 @@ export function useTransferRequestViewModel(): TransferRequestViewModel {
   const reload = useCallback(() => load("refresh"), [load]);
 
   const respond = useCallback(
-    async (status: "confirm" | "reject") => {
-      if (!pending) return;
-      setResponding(true);
+    async (id: number, status: "confirm" | "reject") => {
+      setRespondingId(id);
       setRespondError(null);
       try {
-        await transfers.respond(pending.id, status);
+        await transfers.respond(id, status);
         await load("refresh");
       } catch (e) {
         setRespondError(
           e instanceof Error ? e.message : "Gagal memproses permintaan",
         );
       } finally {
-        setResponding(false);
+        setRespondingId(null);
       }
     },
-    [pending, transfers, load],
+    [transfers, load],
   );
 
-  const confirm = useCallback(() => respond("confirm"), [respond]);
-  const reject = useCallback(() => respond("reject"), [respond]);
+  const confirm = useCallback((id: number) => respond(id, "confirm"), [respond]);
+  const reject = useCallback((id: number) => respond(id, "reject"), [respond]);
 
-  const direction: TransferDirection | null = pending
-    ? pending.toGate.id === activeGateId
-      ? "incoming"
-      : "outgoing"
-    : null;
+  const items = useMemo<TransferRequestItem[]>(
+    () =>
+      pending.map((r) => ({
+        ...r,
+        direction: r.toGate.id === activeGateId ? "incoming" : "outgoing",
+      })),
+    [pending, activeGateId],
+  );
 
   return {
     loading,
     refreshing,
     error,
-    pending,
-    direction,
-    responding,
+    items,
+    respondingId,
     respondError,
     reload,
     confirm,

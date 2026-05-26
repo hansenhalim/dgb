@@ -29,8 +29,11 @@ func newCheckTransferRequestSUT(t *testing.T) *checkTransferRequestSUT {
 func TestCheckTransferRequest_Found(t *testing.T) {
 	sut := newCheckTransferRequestSUT(t)
 
-	expected := &entity.TransferRequest{ID: 1, FromGateID: 2, ToGateID: 1, Amount: 25}
-	sut.repo.EXPECT().FindPendingByGateID(context.Background(), int16(1)).Return(expected, nil).Once()
+	expected := []*entity.TransferRequest{
+		{ID: 1, FromGateID: 2, ToGateID: 1, Amount: 25},
+		{ID: 2, FromGateID: 1, ToGateID: 3, Amount: 10},
+	}
+	sut.repo.EXPECT().FindAllPendingByGateID(context.Background(), int16(1)).Return(expected, nil).Once()
 
 	out, err := sut.uc.Execute(context.Background(), 1)
 	require.NoError(t, err)
@@ -40,7 +43,7 @@ func TestCheckTransferRequest_Found(t *testing.T) {
 func TestCheckTransferRequest_NotFound(t *testing.T) {
 	sut := newCheckTransferRequestSUT(t)
 
-	sut.repo.EXPECT().FindPendingByGateID(context.Background(), int16(1)).Return(nil, nil).Once()
+	sut.repo.EXPECT().FindAllPendingByGateID(context.Background(), int16(1)).Return(nil, nil).Once()
 
 	out, err := sut.uc.Execute(context.Background(), 1)
 	require.NoError(t, err)
@@ -50,7 +53,7 @@ func TestCheckTransferRequest_NotFound(t *testing.T) {
 func TestCheckTransferRequest_RepoError(t *testing.T) {
 	sut := newCheckTransferRequestSUT(t)
 	dbErr := errors.New("db down")
-	sut.repo.EXPECT().FindPendingByGateID(context.Background(), int16(1)).Return(nil, dbErr).Once()
+	sut.repo.EXPECT().FindAllPendingByGateID(context.Background(), int16(1)).Return(nil, dbErr).Once()
 
 	out, err := sut.uc.Execute(context.Background(), 1)
 	assert.ErrorIs(t, err, dbErr)

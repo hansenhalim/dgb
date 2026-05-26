@@ -30,15 +30,13 @@ function parseTransferRequest(wire: TransferRequestWire): TransferRequest {
 }
 
 export class ApiTransfersGateway implements TransfersGateway {
-  async getPending(gateId: number): Promise<TransferRequest | null> {
+  async getPending(gateId: number): Promise<TransferRequest[]> {
     const session = await loadSession();
-    // Server returns 204 No Content when no pending request — httpClient surfaces that as null.
-    const res = await request<ApiEnvelope<TransferRequestWire> | null>(
+    const res = await request<ApiEnvelope<TransferRequestWire[]>>(
       `/v2/gates/${gateId}/transfer-requests`,
       { token: session?.token ?? null },
     );
-    if (!res) return null;
-    return parseTransferRequest(res.data);
+    return res.data.map(parseTransferRequest);
   }
 
   async create(input: CreateTransferInput): Promise<void> {

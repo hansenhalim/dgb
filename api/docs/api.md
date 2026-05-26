@@ -242,7 +242,7 @@ Content-Type: application/json
 
 ## `GET /v2/gates/{id}/transfer-requests`
 
-Check whether a pending transfer request exists for the given gate (as either source or destination). Requires bearer token.
+List all pending transfer requests for the given gate (as either source or destination). Requires bearer token. Multiple pending requests can coexist per gate.
 
 ### Request
 
@@ -252,21 +252,29 @@ Authorization: Bearer <token>
 
 ### Responses
 
-**`204 No Content`** — no pending transfer involves this gate. Empty body.
-
-**`200 OK`**
+**`200 OK`** — returns an array. Empty array when no pending transfer involves this gate.
 
 ```json
 {
-  "message": "Transfer request found.",
-  "data": {
-    "id": 1,
-    "from_gate": { "id": 2, "name": "Gerbang 2" },
-    "to_gate":   { "id": 1, "name": "Gerbang 1" },
-    "amount": 25
-  }
+  "message": "Transfer requests retrieved successfully.",
+  "data": [
+    {
+      "id": 1,
+      "from_gate": { "id": 2, "name": "Gerbang 2" },
+      "to_gate":   { "id": 1, "name": "Gerbang 1" },
+      "amount": 25
+    },
+    {
+      "id": 2,
+      "from_gate": { "id": 1, "name": "Gerbang 1" },
+      "to_gate":   { "id": 3, "name": "Gerbang 3" },
+      "amount": 10
+    }
+  ]
 }
 ```
+
+Rows are sorted by `id` ascending (insertion order).
 
 **`401 Unauthorized`** — same as other authenticated endpoints.
 
@@ -274,7 +282,7 @@ Authorization: Bearer <token>
 
 ## `POST /v2/transfer-requests`
 
-Open a new transfer request from one gate to another. Requires bearer token; the authenticated guard becomes `sender_staff_id`.
+Open a new transfer request from one gate to another. Requires bearer token; the authenticated guard becomes `sender_staff_id`. Multiple pending transfers can coexist for a gate — the server no longer blocks on prior pending requests.
 
 ### Request
 
@@ -306,10 +314,10 @@ Open a new transfer request from one gate to another. Requires bearer token; the
 { "message": "Amount must be smaller or equal to source gate card amount." }
 ```
 
-**`400 Bad Request`** — gate IDs unknown, or a pending transfer already exists involving either gate.
+**`400 Bad Request`** — gate IDs unknown.
 
 ```json
-{ "message": "Invalid request data or transfer already pending." }
+{ "message": "Invalid request data." }
 ```
 
 **`422 Unprocessable Entity`** — request body fails structural validation (missing field, same source/destination, non-positive numbers).

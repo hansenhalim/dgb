@@ -1,3 +1,4 @@
+import LogRocket from "@logrocket/react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -39,6 +40,18 @@ function ReaderBootstrap() {
   return null;
 }
 
+function LogRocketIdentify() {
+  const { session } = useSession();
+  useEffect(() => {
+    if (!session) return;
+    LogRocket.identify(session.guardName, {
+      name: session.guardName,
+      validUntil: session.validUntil.toISOString(),
+    });
+  }, [session]);
+  return null;
+}
+
 function ThemedShell({ children }: { children: React.ReactNode }) {
   const { scheme } = useTheme();
   return (
@@ -50,6 +63,10 @@ function ThemedShell({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    LogRocket.init("wtmg9v/dgb-ih2xo");
+  }, []);
+
   return (
     <KeyboardProvider>
       <ThemeProvider>
@@ -60,6 +77,7 @@ export default function RootLayout() {
                 <SafeAreaProvider>
                   <ThemedShell>
                     <ReaderBootstrap />
+                    <LogRocketIdentify />
                     <AuthGate>
                       <Stack screenOptions={{ headerShown: false }} />
                     </AuthGate>

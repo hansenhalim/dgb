@@ -16,24 +16,32 @@ import { WarningTriangle } from "@/components/icons";
 import { useTheme } from "@/theme/theme";
 import { type Colors, fonts, radius } from "@/theme/tokens";
 
-import { useTransferRequestViewModel } from "./useTransferRequestViewModel";
+import {
+  type TransferRequestItem,
+  useTransferRequestViewModel,
+} from "./useTransferRequestViewModel";
 
 export default function TransferRequestScreen() {
   const vm = useTransferRequestViewModel();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const onReject = () => {
-    if (!vm.pending) return;
+  const onReject = (item: TransferRequestItem) => {
     Alert.alert(
       "Tolak permintaan?",
-      `Permintaan ${vm.pending.amount} kartu dari ${vm.pending.fromGate.name} akan dibatalkan. Stok tidak berpindah.`,
+      `Permintaan ${item.amount} kartu dari ${item.fromGate.name} akan dibatalkan. Stok tidak berpindah.`,
       [
         { text: "Batal", style: "cancel" },
-        { text: "Tolak", style: "destructive", onPress: () => vm.reject() },
+        {
+          text: "Tolak",
+          style: "destructive",
+          onPress: () => vm.reject(item.id),
+        },
       ],
     );
   };
+
+  const hasItems = vm.items.length > 0;
 
   return (
     <SafeAreaView
@@ -92,70 +100,78 @@ export default function TransferRequestScreen() {
             </View>
           ) : null}
 
-          {vm.pending && vm.direction === "incoming" ? (
-            <View style={styles.requestCard}>
-              <Text style={styles.requestKey}>PERMINTAAN MASUK</Text>
-              <View style={styles.outgoingRow}>
-                <View style={styles.outgoingSide}>
-                  <Text style={styles.requestAmount}>{vm.pending.amount}</Text>
-                  <Text style={styles.requestUnit}>kartu</Text>
-                </View>
-                <Text style={styles.outgoingArrow}>←</Text>
-                <View style={styles.outgoingSideRight}>
-                  <Text style={styles.outgoingGate}>
-                    {vm.pending.fromGate.name}
-                  </Text>
-                </View>
-              </View>
+          {vm.items.map((item) => {
+            const busy = vm.respondingId !== null;
+            const isThisBusy = vm.respondingId === item.id;
+            if (item.direction === "incoming") {
+              return (
+                <View key={item.id} style={styles.requestCard}>
+                  <Text style={styles.requestKey}>PERMINTAAN MASUK</Text>
+                  <View style={styles.outgoingRow}>
+                    <View style={styles.outgoingSide}>
+                      <Text style={styles.requestAmount}>{item.amount}</Text>
+                      <Text style={styles.requestUnit}>kartu</Text>
+                    </View>
+                    <Text style={styles.outgoingArrow}>←</Text>
+                    <View style={styles.outgoingSideRight}>
+                      <Text style={styles.outgoingGate}>
+                        {item.fromGate.name}
+                      </Text>
+                    </View>
+                  </View>
 
-              <View style={styles.actionRow}>
-                <Pressable
-                  style={[
-                    styles.actionDanger,
-                    vm.responding && styles.actionDisabled,
-                  ]}
-                  disabled={vm.responding}
-                  onPress={onReject}
-                >
-                  <Text style={styles.actionDangerText}>Tolak</Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.actionPrimary,
-                    vm.responding && styles.actionDisabled,
-                  ]}
-                  disabled={vm.responding}
-                  onPress={() => vm.confirm()}
-                >
-                  <Text style={styles.actionPrimaryText}>Terima</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : null}
-
-          {vm.pending && vm.direction === "outgoing" ? (
-            <View style={styles.requestCard}>
-              <Text style={styles.requestKey}>MENUNGGU KONFIRMASI</Text>
-              <View style={styles.outgoingRow}>
-                <View style={styles.outgoingSide}>
-                  <Text style={styles.requestAmount}>{vm.pending.amount}</Text>
-                  <Text style={styles.requestUnit}>kartu</Text>
+                  <View style={styles.actionRow}>
+                    <Pressable
+                      style={[
+                        styles.actionDanger,
+                        busy && styles.actionDisabled,
+                      ]}
+                      disabled={busy}
+                      onPress={() => onReject(item)}
+                    >
+                      <Text style={styles.actionDangerText}>
+                        {isThisBusy ? "Memproses…" : "Tolak"}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.actionPrimary,
+                        busy && styles.actionDisabled,
+                      ]}
+                      disabled={busy}
+                      onPress={() => vm.confirm(item.id)}
+                    >
+                      <Text style={styles.actionPrimaryText}>
+                        {isThisBusy ? "Memproses…" : "Terima"}
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
-                <Text style={styles.outgoingArrow}>→</Text>
-                <View style={styles.outgoingSideRight}>
-                  <Text style={styles.outgoingGate}>
-                    {vm.pending.toGate.name}
-                  </Text>
+              );
+            }
+            return (
+              <View key={item.id} style={styles.requestCard}>
+                <Text style={styles.requestKey}>MENUNGGU KONFIRMASI</Text>
+                <View style={styles.outgoingRow}>
+                  <View style={styles.outgoingSide}>
+                    <Text style={styles.requestAmount}>{item.amount}</Text>
+                    <Text style={styles.requestUnit}>kartu</Text>
+                  </View>
+                  <Text style={styles.outgoingArrow}>→</Text>
+                  <View style={styles.outgoingSideRight}>
+                    <Text style={styles.outgoingGate}>
+                      {item.toGate.name}
+                    </Text>
+                  </View>
                 </View>
+                <Text style={styles.guidance}>
+                  Untuk membatalkan, minta {item.toGate.name} menolak permintaan.
+                </Text>
               </View>
-              <Text style={styles.guidance}>
-                Untuk membatalkan, minta {vm.pending.toGate.name} menolak
-                permintaan.
-              </Text>
-            </View>
-          ) : null}
+            );
+          })}
 
-          {!vm.pending && !vm.error ? (
+          {!hasItems && !vm.error ? (
             <View style={styles.emptyBlock}>
               <Text style={styles.emptyKey}>DATA TIDAK DITEMUKAN</Text>
             </View>
@@ -163,7 +179,7 @@ export default function TransferRequestScreen() {
         </ScrollView>
       )}
 
-      {!vm.loading && !vm.pending ? (
+      {!vm.loading ? (
         <SafeAreaView style={styles.fabBar} edges={["bottom", "left", "right"]}>
           <Pressable
             style={styles.cta}

@@ -35,7 +35,6 @@ func TestCreateTransferRequest_Success(t *testing.T) {
 	sut := newCreateTransferRequestSUT(t)
 	staffID := uuid.New()
 
-	sut.repo.EXPECT().ExistsPendingForGates(context.Background(), int16(2), int16(1)).Return(false, nil).Once()
 	sut.gateRepo.EXPECT().FindByID(context.Background(), int16(2)).
 		Return(&entity.Gate{ID: 2, CurrentQuota: 100}, nil).Once()
 	sut.gateRepo.EXPECT().FindByID(context.Background(), int16(1)).
@@ -55,20 +54,8 @@ func TestCreateTransferRequest_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateTransferRequest_AlreadyPending(t *testing.T) {
-	sut := newCreateTransferRequestSUT(t)
-	sut.repo.EXPECT().ExistsPendingForGates(context.Background(), int16(2), int16(1)).Return(true, nil).Once()
-
-	err := sut.uc.Execute(context.Background(), usecase.CreateTransferRequestInput{
-		FromGateID: 2, ToGateID: 1, Amount: 25, SenderStaffID: uuid.New(),
-	})
-
-	assert.ErrorIs(t, err, entity.ErrTransferAlreadyPending)
-}
-
 func TestCreateTransferRequest_UnknownFromGate(t *testing.T) {
 	sut := newCreateTransferRequestSUT(t)
-	sut.repo.EXPECT().ExistsPendingForGates(context.Background(), int16(2), int16(1)).Return(false, nil).Once()
 	sut.gateRepo.EXPECT().FindByID(context.Background(), int16(2)).Return(nil, entity.ErrGateNotFound).Once()
 
 	err := sut.uc.Execute(context.Background(), usecase.CreateTransferRequestInput{
@@ -80,7 +67,6 @@ func TestCreateTransferRequest_UnknownFromGate(t *testing.T) {
 
 func TestCreateTransferRequest_InsufficientQuota(t *testing.T) {
 	sut := newCreateTransferRequestSUT(t)
-	sut.repo.EXPECT().ExistsPendingForGates(context.Background(), int16(2), int16(1)).Return(false, nil).Once()
 	sut.gateRepo.EXPECT().FindByID(context.Background(), int16(2)).
 		Return(&entity.Gate{ID: 2, CurrentQuota: 10}, nil).Once()
 
@@ -93,7 +79,6 @@ func TestCreateTransferRequest_InsufficientQuota(t *testing.T) {
 
 func TestCreateTransferRequest_UnknownToGate(t *testing.T) {
 	sut := newCreateTransferRequestSUT(t)
-	sut.repo.EXPECT().ExistsPendingForGates(context.Background(), int16(2), int16(1)).Return(false, nil).Once()
 	sut.gateRepo.EXPECT().FindByID(context.Background(), int16(2)).
 		Return(&entity.Gate{ID: 2, CurrentQuota: 100}, nil).Once()
 	sut.gateRepo.EXPECT().FindByID(context.Background(), int16(1)).
@@ -109,7 +94,6 @@ func TestCreateTransferRequest_UnknownToGate(t *testing.T) {
 func TestCreateTransferRequest_RepoCreateError(t *testing.T) {
 	sut := newCreateTransferRequestSUT(t)
 	dbErr := errors.New("db down")
-	sut.repo.EXPECT().ExistsPendingForGates(context.Background(), int16(2), int16(1)).Return(false, nil).Once()
 	sut.gateRepo.EXPECT().FindByID(context.Background(), int16(2)).
 		Return(&entity.Gate{ID: 2, CurrentQuota: 100}, nil).Once()
 	sut.gateRepo.EXPECT().FindByID(context.Background(), int16(1)).

@@ -15,7 +15,6 @@ const GATE_NAMES: Record<number, string> = {
 };
 
 export class MockTransfersGateway implements TransfersGateway {
-  // A pending request involves exactly two gates; the API guarantees one pending per gate.
   private pending: TransferRequest[] = [
     {
       id: 1,
@@ -26,26 +25,15 @@ export class MockTransfersGateway implements TransfersGateway {
   ];
   private nextId = 2;
 
-  async getPending(gateId: number): Promise<TransferRequest | null> {
+  async getPending(gateId: number): Promise<TransferRequest[]> {
     await delay(150);
-    const found = this.pending.find(
+    return this.pending.filter(
       (r) => r.fromGate.id === gateId || r.toGate.id === gateId,
     );
-    return found ?? null;
   }
 
   async create(input: CreateTransferInput): Promise<void> {
     await delay(250);
-    const conflict = this.pending.find(
-      (r) =>
-        r.fromGate.id === input.fromGateId ||
-        r.toGate.id === input.fromGateId ||
-        r.fromGate.id === input.toGateId ||
-        r.toGate.id === input.toGateId,
-    );
-    if (conflict) {
-      throw new Error("Invalid request data or transfer already pending.");
-    }
     this.pending.push({
       id: this.nextId++,
       fromGate: {

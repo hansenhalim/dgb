@@ -7,7 +7,7 @@ import (
 )
 
 type CheckTransferRequestUsecase interface {
-	Execute(ctx context.Context, gateID int16) (*entity.TransferRequest, error)
+	Execute(ctx context.Context, gateID int16) ([]*entity.TransferRequest, error)
 }
 
 type checkTransferRequest struct {
@@ -18,6 +18,6 @@ func NewCheckTransferRequest(repo TransferRequestRepository) CheckTransferReques
 	return &checkTransferRequest{repo: repo}
 }
 
-func (u *checkTransferRequest) Execute(ctx context.Context, gateID int16) (*entity.TransferRequest, error) {
-	return u.repo.FindPendingByGateID(ctx, gateID)
+func (u *checkTransferRequest) Execute(ctx context.Context, gateID int16) ([]*entity.TransferRequest, error) {
+	return u.repo.FindAllPendingByGateID(ctx, gateID)
 }

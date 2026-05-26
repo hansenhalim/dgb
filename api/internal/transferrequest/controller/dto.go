@@ -22,9 +22,9 @@ type transferRequestPayload struct {
 	Amount   int16   `json:"amount"`
 }
 
-type findTransferRequestResponse struct {
-	Message string                 `json:"message"`
-	Data    transferRequestPayload `json:"data"`
+type listTransferRequestsResponse struct {
+	Message string                   `json:"message"`
+	Data    []transferRequestPayload `json:"data"`
 }
 
 type messageResponse struct {

@@ -46,22 +46,24 @@ func (c *TransferRequestController) Check(ctx *echo.Context) error {
 		return httperror.New(http.StatusUnprocessableEntity, "Validation failed.")
 	}
 
-	tr, err := c.check.Execute(ctx.Request().Context(), gateID)
+	trs, err := c.check.Execute(ctx.Request().Context(), gateID)
 	if err != nil {
 		return err
 	}
-	if tr == nil {
-		return ctx.NoContent(http.StatusNoContent)
-	}
 
-	return ctx.JSON(http.StatusOK, findTransferRequestResponse{
-		Message: "Transfer request found.",
-		Data: transferRequestPayload{
+	data := make([]transferRequestPayload, 0, len(trs))
+	for _, tr := range trs {
+		data = append(data, transferRequestPayload{
 			ID:       tr.ID,
 			FromGate: gateRef{ID: tr.FromGate.ID, Name: tr.FromGate.Name},
 			ToGate:   gateRef{ID: tr.ToGate.ID, Name: tr.ToGate.Name},
 			Amount:   tr.Amount,
-		},
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, listTransferRequestsResponse{
+		Message: "Transfer requests retrieved successfully.",
+		Data:    data,
 	})
 }
 
@@ -89,8 +91,8 @@ func (c *TransferRequestController) Create(ctx *echo.Context) error {
 		switch {
 		case errors.Is(err, entity.ErrInsufficientQuota):
 			return httperror.New(http.StatusBadRequest, "Amount must be smaller or equal to source gate card amount.")
-		case errors.Is(err, entity.ErrTransferAlreadyPending), errors.Is(err, entity.ErrInvalidTransferGates):
-			return httperror.New(http.StatusBadRequest, "Invalid request data or transfer already pending.")
+		case errors.Is(err, entity.ErrInvalidTransferGates):
+			return httperror.New(http.StatusBadRequest, "Invalid request data.")
 		default:
 			return err
 		}
