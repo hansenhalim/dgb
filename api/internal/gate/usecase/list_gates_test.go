@@ -47,9 +47,9 @@ func TestListGates_Success(t *testing.T) {
 	require.NotNil(t, out)
 	require.Len(t, out.Items, 3)
 
-	assert.Equal(t, usecase.ListGatesItem{ID: 1, Name: "Gerbang 1", CurrentQuota: 300, IsAvailable: true}, out.Items[0])
-	assert.Equal(t, usecase.ListGatesItem{ID: 2, Name: "Gerbang 2", CurrentQuota: 150, IsAvailable: false}, out.Items[1])
-	assert.Equal(t, usecase.ListGatesItem{ID: 4, Name: "Gerbang 4", CurrentQuota: 0, IsAvailable: true}, out.Items[2])
+	assert.Equal(t, usecase.ListGatesItem{ID: 1, Name: "Gerbang 1", IsAvailable: true}, out.Items[0])
+	assert.Equal(t, usecase.ListGatesItem{ID: 2, Name: "Gerbang 2", IsAvailable: false}, out.Items[1])
+	assert.Equal(t, usecase.ListGatesItem{ID: 4, Name: "Gerbang 4", IsAvailable: true}, out.Items[2])
 }
 
 func TestListGates_EmptyList(t *testing.T) {

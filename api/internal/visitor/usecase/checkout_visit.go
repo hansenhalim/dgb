@@ -21,6 +21,7 @@ type CheckoutVisitUsecase interface {
 type checkoutVisit struct {
 	visitRepo   VisitRepository
 	visitorRepo VisitorRepository
+	gateRepo    GateRepository
 	clock       Clock
 	tx          TxRunner
 }
@@ -28,12 +29,14 @@ type checkoutVisit struct {
 func NewCheckoutVisit(
 	visitRepo VisitRepository,
 	visitorRepo VisitorRepository,
+	gateRepo GateRepository,
 	clock Clock,
 	tx TxRunner,
 ) CheckoutVisitUsecase {
 	return &checkoutVisit{
 		visitRepo:   visitRepo,
 		visitorRepo: visitorRepo,
+		gateRepo:    gateRepo,
 		clock:       clock,
 		tx:          tx,
 	}
@@ -53,7 +56,10 @@ func (u *checkoutVisit) Execute(ctx context.Context, in CheckoutVisitInput) erro
 		if err != nil {
 			return err
 		}
-		return u.visitorRepo.ClearBan(ctx, visit.VisitorID)
+		if err := u.visitorRepo.ClearBan(ctx, visit.VisitorID); err != nil {
+			return err
+		}
+		return u.gateRepo.AdjustQuota(ctx, in.GateID, 1)
 	})
 }
 

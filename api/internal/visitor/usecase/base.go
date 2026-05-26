@@ -30,6 +30,10 @@ type RfidRepository interface {
 	AssociateVisit(ctx context.Context, rfidID uint16, visitID uuid.UUID) error
 }
 
+type GateRepository interface {
+	AdjustQuota(ctx context.Context, gateID int16, delta int16) error
+}
+
 // TxRunner lets a usecase wrap several repository writes in a single atomic
 // transaction. The implementation is responsible for stashing whatever
 // transactional handle the repositories need on the ctx it passes to fn.

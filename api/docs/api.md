@@ -116,9 +116,9 @@ There is no logout endpoint. JWTs are stateless and the server keeps no per-toke
 
 ---
 
-## `GET /v2/home`
+## `GET /v2/home?gate_id=<id>`
 
-Aggregate counts for the guard's home screen. Requires bearer token.
+Aggregate counts scoped to a single gate for the guard's home screen, plus a hint about whether the gate has an incoming transfer request awaiting response. Requires bearer token.
 
 ### Request
 
@@ -126,7 +126,9 @@ Aggregate counts for the guard's home screen. Requires bearer token.
 Authorization: Bearer <token>
 ```
 
-No body.
+| query     | type  | rules         |
+| --------- | ----- | ------------- |
+| `gate_id` | int16 | required, > 0 |
 
 ### Responses
 
@@ -136,18 +138,24 @@ No body.
 {
   "message": "Home dashboard retrieved successfully.",
   "data": {
-    "cardStock": { "available": 605, "total": 617 },
-    "visits": { "active": 12, "total": 28 }
+    "cardStock": { "available": 300, "total": 305 },
+    "visits": { "active": 5, "total": 14 },
+    "has_incoming_transfer_request": false
   }
 }
 ```
 
-| field                 | source |
-| --------------------- | ------ |
-| `cardStock.available` | `SUM(gates.current_quota)` — free cards across all gates right now |
-| `cardStock.total`     | `cardStock.available + visits.active` — i.e. free cards plus cards currently issued to active visits |
-| `visits.active`       | `COUNT(visits WHERE checkout_at IS NULL)` |
-| `visits.total`        | `COUNT(visits WHERE checkin_at >= today UTC)` — today's check-in count |
+| field                           | source |
+| ------------------------------- | ------ |
+| `cardStock.available`           | this gate's `gates.current_quota` |
+| `cardStock.total`               | `cardStock.available + visits.active` — i.e. this gate's free cards plus cards currently issued to active visits checked in at this gate |
+| `visits.active`                 | `COUNT(visits WHERE checkin_gate_id=<id> AND checkout_at IS NULL)` |
+| `visits.total`                  | `COUNT(visits WHERE checkin_gate_id=<id> AND checkin_at >= today UTC)` — today's check-ins at this gate |
+| `has_incoming_transfer_request` | `true` iff a pending transfer exists with `to_gate_id=<id>`. Outgoing pending requests do not light this flag — they're surfaced via `GET /v2/gates/{id}/transfer-requests` instead |
+
+If `gate_id` refers to a gate id that doesn't exist, the response is still `200` with all numeric fields zero and the flag `false` — matches the lenient behavior of `/v2/visits/history`.
+
+**`422 Unprocessable Entity`** — `gate_id` missing, non-numeric, or non-positive.
 
 **`401 Unauthorized`** — token missing/malformed/expired.
 
@@ -155,7 +163,7 @@ No body.
 
 ## `GET /v2/gates`
 
-List all gates with their current quota and an availability flag. Requires a valid bearer token issued by `verify-secret`.
+List all gates with an availability flag. Requires a valid bearer token issued by `verify-secret`.
 
 ### Request
 
@@ -173,15 +181,15 @@ No body.
 {
   "message": "Successfully retrieved available gates.",
   "data": [
-    { "id": 1, "name": "Gerbang 1", "current_quota": 300, "is_available": true },
-    { "id": 2, "name": "Gerbang 2", "current_quota": 150, "is_available": true },
-    { "id": 3, "name": "Gerbang 3", "current_quota": 100, "is_available": true },
-    { "id": 4, "name": "Gerbang 4", "current_quota": 0,   "is_available": true }
+    { "id": 1, "name": "Gerbang 1", "is_available": true },
+    { "id": 2, "name": "Gerbang 2", "is_available": true },
+    { "id": 3, "name": "Gerbang 3", "is_available": true },
+    { "id": 4, "name": "Gerbang 4", "is_available": true }
   ]
 }
 ```
 
-`current_quota` comes from the `gates` table (sorted by `id` ascending). `is_available` is sourced from the env var `GATE_<id>_IS_AVAILABLE` (default `true` when unset or unparseable), mirroring the Laravel `config("app.gate_{$id}_is_available", true)` lookup.
+Rows come from the `gates` table sorted by `id` ascending. `is_available` is sourced from the env var `GATE_<id>_IS_AVAILABLE` (default `true` when unset or unparseable), mirroring the Laravel `config("app.gate_{$id}_is_available", true)` lookup. Per-gate quota is no longer returned here — call `GET /v2/home?gate_id=<id>` to read the active gate's quota.
 
 **`401 Unauthorized`** — missing, malformed, or expired token.
 
@@ -733,27 +741,29 @@ Authorization: Bearer <token>
     {
       "id": "7f425f50-1d17-43d4-9d16-e4b3125c0136",
       "vehicle_plate_number": "B 1234 XY",
-      "current_position": "VILLA 1",
+      "current_position": "VIL_1",
       "destination_name": "A-47",
       "created_at": "2025-06-26T14:03:52Z"
     },
     {
       "id": "7f425f50-1d17-43d4-9d16-e4b3125c0136",
       "vehicle_plate_number": "BE 1199 AA",
-      "current_position": "VILLA 1",
+      "current_position": "VIL_1",
       "destination_name": "AA-1",
       "created_at": "2025-06-26T14:03:52Z"
     },
     {
       "id": "7f425f50-1d17-43d4-9d16-e4b3125c0136",
       "vehicle_plate_number": "F 9988 JK",
-      "current_position": "VILLA 2",
+      "current_position": "VIL_2",
       "destination_name": "C-32",
       "created_at": "2025-06-26T14:03:52Z"
     }
   ]
 }
 ```
+
+`current_position` is the same CardArea wire code used elsewhere (`VIL_1`, `VIL_2`, `VIL_E`, `TRNST`) plus `OUT` for post-checkout visits.
 
 **`422 Unprocessable Entity`** — `gate_id` missing or invalid.
 

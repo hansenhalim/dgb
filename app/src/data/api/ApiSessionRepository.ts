@@ -13,7 +13,6 @@ type RfidKeyResponse = { message: string; rfid_key: string };
 type ApiGate = {
   id: number;
   name: string;
-  current_quota: number;
   is_available: boolean;
 };
 
@@ -25,26 +24,28 @@ type ApiDestination = {
 type ApiHome = {
   cardStock: { available: number; total: number };
   visits: { active: number; total: number };
+  has_incoming_transfer_request: boolean;
 };
 
 function toGate(g: ApiGate): Gate {
   return {
     id: g.id,
     name: g.name,
-    currentQuota: g.current_quota,
     isAvailable: g.is_available,
   };
 }
 
 export class ApiSessionRepository implements SessionRepository {
-  async getDashboard(): Promise<DashboardSnapshot> {
+  async getDashboard(gateId: number): Promise<DashboardSnapshot> {
     const session = await loadSession();
-    const res = await request<ApiEnvelope<ApiHome>>("/v2/home", {
-      token: session?.token ?? null,
-    });
+    const res = await request<ApiEnvelope<ApiHome>>(
+      `/v2/home?gate_id=${encodeURIComponent(gateId)}`,
+      { token: session?.token ?? null },
+    );
     return {
       cardStock: res.data.cardStock,
       visits: res.data.visits,
+      hasIncomingTransferRequest: res.data.has_incoming_transfer_request,
     };
   }
 

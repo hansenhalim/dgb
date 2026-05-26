@@ -35,10 +35,9 @@ func (c *GateController) List(ctx *echo.Context) error {
 	items := make([]gateItem, len(out.Items))
 	for i, it := range out.Items {
 		items[i] = gateItem{
-			ID:           it.ID,
-			Name:         it.Name,
-			CurrentQuota: it.CurrentQuota,
-			IsAvailable:  it.IsAvailable,
+			ID:          it.ID,
+			Name:        it.Name,
+			IsAvailable: it.IsAvailable,
 		}
 	}
 

@@ -8,7 +8,7 @@ import (
 )
 
 type HomeRepository interface {
-	Snapshot(ctx context.Context, nowUTC time.Time) (*repository.SnapshotCounts, error)
+	Snapshot(ctx context.Context, gateID int16, nowUTC time.Time) (*repository.SnapshotCounts, error)
 }
 
 type Clock interface {

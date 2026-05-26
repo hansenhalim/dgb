@@ -1,10 +1,9 @@
 package controller
 
 type gateItem struct {
-	ID           int16  `json:"id"`
-	Name         string `json:"name"`
-	CurrentQuota int16  `json:"current_quota"`
-	IsAvailable  bool   `json:"is_available"`
+	ID          int16  `json:"id"`
+	Name        string `json:"name"`
+	IsAvailable bool   `json:"is_available"`
 }
 
 type listGatesResponse struct {

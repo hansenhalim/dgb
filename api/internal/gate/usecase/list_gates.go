@@ -5,10 +5,9 @@ import (
 )
 
 type ListGatesItem struct {
-	ID           int16
-	Name         string
-	CurrentQuota int16
-	IsAvailable  bool
+	ID          int16
+	Name        string
+	IsAvailable bool
 }
 
 type ListGatesOutput struct {
@@ -37,10 +36,9 @@ func (u *listGates) Execute(ctx context.Context) (*ListGatesOutput, error) {
 	items := make([]ListGatesItem, len(gates))
 	for i, g := range gates {
 		items[i] = ListGatesItem{
-			ID:           g.ID,
-			Name:         g.Name,
-			CurrentQuota: g.CurrentQuota,
-			IsAvailable:  u.availability.IsAvailable(g.ID),
+			ID:          g.ID,
+			Name:        g.Name,
+			IsAvailable: u.availability.IsAvailable(g.ID),
 		}
 	}
 	return &ListGatesOutput{Items: items}, nil

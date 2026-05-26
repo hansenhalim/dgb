@@ -18,6 +18,7 @@ import (
 type checkoutVisitSUT struct {
 	visitRepo   *usecase.MockVisitRepository
 	visitorRepo *usecase.MockVisitorRepository
+	gateRepo    *usecase.MockGateRepository
 	clock       *usecase.MockClock
 	tx          *usecase.MockTxRunner
 	uc          usecase.CheckoutVisitUsecase
@@ -27,14 +28,16 @@ func newCheckoutVisitSUT(t *testing.T) *checkoutVisitSUT {
 	t.Helper()
 	visitRepo := usecase.NewMockVisitRepository(t)
 	visitorRepo := usecase.NewMockVisitorRepository(t)
+	gateRepo := usecase.NewMockGateRepository(t)
 	clock := usecase.NewMockClock(t)
 	tx := usecase.NewMockTxRunner(t)
 	return &checkoutVisitSUT{
 		visitRepo:   visitRepo,
 		visitorRepo: visitorRepo,
+		gateRepo:    gateRepo,
 		clock:       clock,
 		tx:          tx,
-		uc:          usecase.NewCheckoutVisit(visitRepo, visitorRepo, clock, tx),
+		uc:          usecase.NewCheckoutVisit(visitRepo, visitorRepo, gateRepo, clock, tx),
 	}
 }
 
@@ -62,6 +65,7 @@ func TestCheckoutVisit_Success(t *testing.T) {
 		mock.MatchedBy(func(g *int16) bool { return g != nil && *g == gateID }),
 	).Return(&entity.Visit{ID: visitID, VisitorID: visitorID, CurrentPosition: entity.CurrentPositionOutside, UpdatedAt: now}, nil).Once()
 	sut.visitorRepo.EXPECT().ClearBan(mock.Anything, visitorID).Return(nil).Once()
+	sut.gateRepo.EXPECT().AdjustQuota(mock.Anything, gateID, int16(1)).Return(nil).Once()
 
 	err := sut.uc.Execute(context.Background(), usecase.CheckoutVisitInput{VisitID: visitID, GateID: gateID})
 

@@ -43,6 +43,11 @@ func (r *GateRepository) FindByID(ctx context.Context, id int16) (*entity.Gate, 
 	return &g, nil
 }
 
+func (r *GateRepository) AdjustQuota(ctx context.Context, gateID int16, delta int16) error {
+	return r.db.WithContext(ctx).Model(&gate{}).Where("id = ?", gateID).
+		UpdateColumn("current_quota", gorm.Expr("current_quota + ?", delta)).Error
+}
+
 func toEntityGate(r *gate) entity.Gate {
 	return entity.Gate{
 		ID:           r.ID,

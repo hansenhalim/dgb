@@ -238,7 +238,7 @@ func (c *VisitorController) GetHistory(ctx *echo.Context) error {
 		items[i] = visitHistoryItem{
 			ID:                 v.ID.String(),
 			VehiclePlateNumber: v.VehiclePlateNumber,
-			CurrentPosition:    currentPositionHuman(v.CurrentPosition),
+			CurrentPosition:    currentAreaWire(v.CurrentPosition),
 			DestinationName:    v.DestinationName,
 			CreatedAt:          v.CreatedAt.UTC().Format(time.RFC3339),
 		}
@@ -298,26 +298,6 @@ func mapStateChangeError(err error) error {
 		return httperror.New(http.StatusBadRequest, "Invalid request data.")
 	default:
 		return err
-	}
-}
-
-// currentPositionHuman renders CurrentPosition into the human-readable form
-// used by the visit history endpoint (mirrors Laravel's
-// `CurrentPosition::formatName`).
-func currentPositionHuman(p entity.CurrentPosition) string {
-	switch p {
-	case entity.CurrentPositionOutside:
-		return "OUTSIDE"
-	case entity.CurrentPositionVilla1:
-		return "VILLA 1"
-	case entity.CurrentPositionVilla2:
-		return "VILLA 2"
-	case entity.CurrentPositionExclusive:
-		return "EXCLUSIVE"
-	case entity.CurrentPositionInTransit:
-		return "TRANSIT"
-	default:
-		return ""
 	}
 }
 

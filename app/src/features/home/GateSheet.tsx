@@ -108,8 +108,7 @@ export function GateSheet({
                       <View style={styles.gateMain}>
                         <Text style={styles.gateName}>{g.name}</Text>
                         <Text style={styles.gateMeta}>
-                          {g.isAvailable ? "Tersedia" : "Tidak tersedia"} ·{" "}
-                          {g.currentQuota} kuota
+                          {g.isAvailable ? "Tersedia" : "Tidak tersedia"}
                         </Text>
                       </View>
                       {isCurrent ? (

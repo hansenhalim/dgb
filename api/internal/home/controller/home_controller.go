@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"github.com/hansenhalim/dgb/api/internal/home/usecase"
+	"github.com/hansenhalim/dgb/api/internal/shared/httperror"
 )
 
 type HomeController struct {
@@ -22,7 +23,15 @@ func (c *HomeController) Register(g *echo.Group) {
 }
 
 func (c *HomeController) Get(ctx *echo.Context) error {
-	out, err := c.getHome.Execute(ctx.Request().Context())
+	var q getHomeQuery
+	if err := ctx.Bind(&q); err != nil {
+		return httperror.New(http.StatusUnprocessableEntity, "Validation failed.")
+	}
+	if err := ctx.Validate(&q); err != nil {
+		return httperror.New(http.StatusUnprocessableEntity, "Validation failed.")
+	}
+
+	out, err := c.getHome.Execute(ctx.Request().Context(), usecase.GetHomeInput{GateID: q.GateID})
 	if err != nil {
 		return err
 	}
@@ -37,6 +46,7 @@ func (c *HomeController) Get(ctx *echo.Context) error {
 				Active: out.VisitsActive,
 				Total:  out.VisitsTotal,
 			},
+			HasIncomingTransferRequest: out.HasIncomingTransferRequest,
 		},
 	})
 }

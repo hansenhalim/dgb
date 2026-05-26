@@ -1,12 +1,11 @@
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useActiveGate } from "@/config/activeGate";
 import { useServices } from "@/config/container";
 import type {
   CardStock,
   Gate,
-  TransferRequest,
   VisitSummary,
 } from "@/domain/entities";
 
@@ -19,7 +18,7 @@ export type HomeViewModel = {
   cardStock: CardStock | null;
   visits: VisitSummary | null;
   lowStock: boolean;
-  pendingIncoming: TransferRequest | null;
+  hasIncomingTransferRequest: boolean;
   reload: () => Promise<void>;
   selectGate: (gateId: number) => Promise<void>;
 };
@@ -27,7 +26,7 @@ export type HomeViewModel = {
 const LOW_STOCK_THRESHOLD = 0.2;
 
 export function useHomeViewModel(): HomeViewModel {
-  const { session, transfers } = useServices();
+  const { session } = useServices();
   const { activeGate, gates, selectGate } = useActiveGate();
   const activeGateId = activeGate?.id ?? null;
 
@@ -36,19 +35,20 @@ export function useHomeViewModel(): HomeViewModel {
   const [error, setError] = useState<string | null>(null);
   const [cardStock, setCardStock] = useState<CardStock | null>(null);
   const [visits, setVisits] = useState<VisitSummary | null>(null);
-  const [pendingIncoming, setPendingIncoming] = useState<TransferRequest | null>(
-    null,
-  );
+  const [hasIncomingTransferRequest, setHasIncomingTransferRequest] =
+    useState(false);
 
   const load = useCallback(
     async (mode: "initial" | "refresh") => {
+      if (activeGateId === null) return;
       if (mode === "refresh") setRefreshing(true);
       else setLoading(true);
       setError(null);
       try {
-        const dashboard = await session.getDashboard();
+        const dashboard = await session.getDashboard(activeGateId);
         setCardStock(dashboard.cardStock);
         setVisits(dashboard.visits);
+        setHasIncomingTransferRequest(dashboard.hasIncomingTransferRequest);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Gagal memuat data");
       } finally {
@@ -56,35 +56,29 @@ export function useHomeViewModel(): HomeViewModel {
         else setLoading(false);
       }
     },
-    [session],
+    [activeGateId, session],
   );
 
+  // Full initial load whenever the active gate changes (incl. first mount).
+  // Suppress the immediate focus-effect fire so we don't double-load.
+  const skipNextFocusRef = useRef(true);
   useEffect(() => {
+    skipNextFocusRef.current = true;
     load("initial");
   }, [load]);
 
   const reload = useCallback(() => load("refresh"), [load]);
 
-  // Re-check the inbox each time home regains focus (post-respond, post-create, etc.).
+  // Refetch on subsequent focus events so post-respond / post-create transitions
+  // update both the dashboard counts and the incoming-transfer banner.
   useFocusEffect(
     useCallback(() => {
-      if (activeGateId === null) return;
-      let cancelled = false;
-      transfers
-        .getPending(activeGateId)
-        .then((req) => {
-          if (cancelled) return;
-          // Only surface a banner when this gate is the receiver — outgoing isn't actionable here.
-          setPendingIncoming(req && req.toGate.id === activeGateId ? req : null);
-        })
-        .catch(() => {
-          if (cancelled) return;
-          setPendingIncoming(null);
-        });
-      return () => {
-        cancelled = true;
-      };
-    }, [activeGateId, transfers]),
+      if (skipNextFocusRef.current) {
+        skipNextFocusRef.current = false;
+        return;
+      }
+      load("refresh");
+    }, [load]),
   );
 
   const lowStock =
@@ -99,7 +93,7 @@ export function useHomeViewModel(): HomeViewModel {
     cardStock,
     visits,
     lowStock,
-    pendingIncoming,
+    hasIncomingTransferRequest,
     reload,
     selectGate,
   };

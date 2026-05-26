@@ -7,8 +7,6 @@ import type { CardStock, Gate } from "@/domain/entities";
 export type StockImpact = {
   sourceBefore: number;
   sourceAfter: number;
-  destBefore: number;
-  destAfter: number;
   sourceLow: boolean;
 };
 
@@ -52,11 +50,12 @@ export function useNewTransferRequestViewModel(): NewTransferRequestViewModel {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (sourceGateId === null) return;
     setLoading(true);
     setLoadError(null);
     try {
       const [dashboard, list] = await Promise.all([
-        session.getDashboard(),
+        session.getDashboard(sourceGateId),
         session.listGates(),
       ]);
       setCardStock(dashboard.cardStock);
@@ -66,7 +65,7 @@ export function useNewTransferRequestViewModel(): NewTransferRequestViewModel {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [session, sourceGateId]);
 
   useEffect(() => {
     load();
@@ -90,18 +89,13 @@ export function useNewTransferRequestViewModel(): NewTransferRequestViewModel {
 
   const impact = useMemo<StockImpact | null>(() => {
     if (!valid || amount === null || cardStock === null) return null;
-    const dest = gates.find((g) => g.id === selectedReceiverId);
-    if (!dest) return null;
     const sourceAfter = cardStock.available - amount;
-    const destAfter = dest.currentQuota + amount;
     return {
       sourceBefore: cardStock.available,
       sourceAfter,
-      destBefore: dest.currentQuota,
-      destAfter,
       sourceLow: sourceAfter / cardStock.total < LOW_STOCK_THRESHOLD,
     };
-  }, [valid, amount, cardStock, gates, selectedReceiverId]);
+  }, [valid, amount, cardStock]);
 
   const setReceiver = useCallback((gateId: number) => {
     setSelectedReceiverId(gateId);

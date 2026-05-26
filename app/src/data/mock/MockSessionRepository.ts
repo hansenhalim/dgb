@@ -6,11 +6,34 @@ import { delay } from "./latency";
 const RFID_KEY = "C0FFEE".repeat(32);
 
 const gates: Gate[] = [
-  { id: 1, name: "Gerbang 1", currentQuota: 55, isAvailable: true },
-  { id: 2, name: "Gerbang 2", currentQuota: 45, isAvailable: true },
-  { id: 3, name: "Gerbang 3", currentQuota: 55, isAvailable: true },
-  { id: 4, name: "Gerbang 4", currentQuota: 0, isAvailable: true },
+  { id: 1, name: "Gerbang 1", isAvailable: true },
+  { id: 2, name: "Gerbang 2", isAvailable: true },
+  { id: 3, name: "Gerbang 3", isAvailable: true },
+  { id: 4, name: "Gerbang 4", isAvailable: true },
 ];
+
+const dashboardByGate: Record<number, DashboardSnapshot> = {
+  1: {
+    cardStock: { available: 55, total: 60 },
+    visits: { total: 14, active: 5 },
+    hasIncomingTransferRequest: false,
+  },
+  2: {
+    cardStock: { available: 45, total: 48 },
+    visits: { total: 9, active: 3 },
+    hasIncomingTransferRequest: true,
+  },
+  3: {
+    cardStock: { available: 55, total: 59 },
+    visits: { total: 5, active: 4 },
+    hasIncomingTransferRequest: false,
+  },
+  4: {
+    cardStock: { available: 0, total: 0 },
+    visits: { total: 0, active: 0 },
+    hasIncomingTransferRequest: false,
+  },
+};
 
 const destinations: Destination[] = [
   { name: "AA-1", position: "VIL_1" },
@@ -26,12 +49,15 @@ const destinations: Destination[] = [
 ];
 
 export class MockSessionRepository implements SessionRepository {
-  async getDashboard(): Promise<DashboardSnapshot> {
+  async getDashboard(gateId: number): Promise<DashboardSnapshot> {
     await delay(120);
-    return {
-      cardStock: { available: 50, total: 55 },
-      visits: { total: 28, active: 12 },
-    };
+    return (
+      dashboardByGate[gateId] ?? {
+        cardStock: { available: 0, total: 0 },
+        visits: { total: 0, active: 0 },
+        hasIncomingTransferRequest: false,
+      }
+    );
   }
 
   async listGates(): Promise<Gate[]> {

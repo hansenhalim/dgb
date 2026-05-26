@@ -35,6 +35,7 @@ type createVisit struct {
 	rfidRepo    RfidRepository
 	visitorRepo VisitorRepository
 	visitRepo   VisitRepository
+	gateRepo    GateRepository
 	digester    Digester
 	encryptor   Encryptor
 	clock       Clock
@@ -45,6 +46,7 @@ func NewCreateVisit(
 	rfidRepo RfidRepository,
 	visitorRepo VisitorRepository,
 	visitRepo VisitRepository,
+	gateRepo GateRepository,
 	digester Digester,
 	encryptor Encryptor,
 	clock Clock,
@@ -54,6 +56,7 @@ func NewCreateVisit(
 		rfidRepo:    rfidRepo,
 		visitorRepo: visitorRepo,
 		visitRepo:   visitRepo,
+		gateRepo:    gateRepo,
 		digester:    digester,
 		encryptor:   encryptor,
 		clock:       clock,
@@ -116,6 +119,10 @@ func (u *createVisit) Execute(ctx context.Context, in CreateVisitInput) (*Create
 
 		reason := fmt.Sprintf("Checked in at gate %d", in.GateID)
 		if err := u.visitorRepo.MarkBanned(ctx, visitor.ID, reason, now); err != nil {
+			return err
+		}
+
+		if err := u.gateRepo.AdjustQuota(ctx, in.GateID, -1); err != nil {
 			return err
 		}
 

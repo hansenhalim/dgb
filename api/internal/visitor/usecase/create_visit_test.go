@@ -19,6 +19,7 @@ type createVisitSUT struct {
 	rfidRepo    *usecase.MockRfidRepository
 	visitorRepo *usecase.MockVisitorRepository
 	visitRepo   *usecase.MockVisitRepository
+	gateRepo    *usecase.MockGateRepository
 	digester    *usecase.MockDigester
 	encryptor   *usecase.MockEncryptor
 	clock       *usecase.MockClock
@@ -31,6 +32,7 @@ func newCreateVisitSUT(t *testing.T) *createVisitSUT {
 	rfidRepo := usecase.NewMockRfidRepository(t)
 	visitorRepo := usecase.NewMockVisitorRepository(t)
 	visitRepo := usecase.NewMockVisitRepository(t)
+	gateRepo := usecase.NewMockGateRepository(t)
 	digester := usecase.NewMockDigester(t)
 	encryptor := usecase.NewMockEncryptor(t)
 	clock := usecase.NewMockClock(t)
@@ -39,11 +41,12 @@ func newCreateVisitSUT(t *testing.T) *createVisitSUT {
 		rfidRepo:    rfidRepo,
 		visitorRepo: visitorRepo,
 		visitRepo:   visitRepo,
+		gateRepo:    gateRepo,
 		digester:    digester,
 		encryptor:   encryptor,
 		clock:       clock,
 		tx:          tx,
-		uc:          usecase.NewCreateVisit(rfidRepo, visitorRepo, visitRepo, digester, encryptor, clock, tx),
+		uc:          usecase.NewCreateVisit(rfidRepo, visitorRepo, visitRepo, gateRepo, digester, encryptor, clock, tx),
 	}
 }
 
@@ -102,6 +105,7 @@ func TestCreateVisit_Success(t *testing.T) {
 	}).Return(nil).Once()
 	sut.rfidRepo.EXPECT().AssociateVisit(mock.Anything, uint16(7), visitID).Return(nil).Once()
 	sut.visitorRepo.EXPECT().MarkBanned(mock.Anything, visitorID, "Checked in at gate 1", now).Return(nil).Once()
+	sut.gateRepo.EXPECT().AdjustQuota(mock.Anything, in.GateID, int16(-1)).Return(nil).Once()
 
 	out, err := sut.uc.Execute(context.Background(), in)
 

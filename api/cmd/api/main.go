@@ -8,7 +8,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
-	"github.com/labstack/echo/v5/middleware"
 
 	authcontroller "github.com/hansenhalim/dgb/api/internal/auth/controller"
 	authrepository "github.com/hansenhalim/dgb/api/internal/auth/repository"
@@ -35,8 +34,8 @@ import (
 	"github.com/hansenhalim/dgb/api/internal/shared/httperror"
 	jwtissuer "github.com/hansenhalim/dgb/api/internal/shared/jwt"
 	"github.com/hansenhalim/dgb/api/internal/shared/laravelcrypt"
+	"github.com/hansenhalim/dgb/api/internal/shared/server"
 	"github.com/hansenhalim/dgb/api/internal/shared/tx"
-	sharedvalidator "github.com/hansenhalim/dgb/api/internal/shared/validator"
 	trcontroller "github.com/hansenhalim/dgb/api/internal/transferrequest/controller"
 	trrepository "github.com/hansenhalim/dgb/api/internal/transferrequest/repository"
 	trusecase "github.com/hansenhalim/dgb/api/internal/transferrequest/usecase"
@@ -90,8 +89,8 @@ func main() {
 	respondTR := trusecase.NewRespondTransferRequest(trRepo, systemClock)
 	getRfidKey := rfidusecase.NewGetRfidKey(rfidRepo)
 	getVisitorStatus := visitorusecase.NewGetVisitorStatus(visitorRepo, visitRepo, sha256)
-	createVisit := visitorusecase.NewCreateVisit(rfidRepo, visitorRepo, visitRepo, sha256, encryptor, systemClock, txRunner)
-	checkoutVisit := visitorusecase.NewCheckoutVisit(visitRepo, visitorRepo, systemClock, txRunner)
+	createVisit := visitorusecase.NewCreateVisit(rfidRepo, visitorRepo, visitRepo, gateRepo, sha256, encryptor, systemClock, txRunner)
+	checkoutVisit := visitorusecase.NewCheckoutVisit(visitRepo, visitorRepo, gateRepo, systemClock, txRunner)
 	transitVisit := visitorusecase.NewTransitVisit(visitRepo)
 	transitEnterVisit := visitorusecase.NewTransitEnterVisit(visitRepo)
 	getVisitHistory := visitorusecase.NewGetVisitHistory(visitRepo)
@@ -118,11 +117,7 @@ func main() {
 	homeCtrl := homecontroller.NewHomeController(getHome, jwtMW)
 	extractIDCtrl := extractidcontroller.NewExtractIDController(cfg.OCRURL, jwtMW)
 
-	e := echo.New()
-	e.Validator = sharedvalidator.New()
-	e.HTTPErrorHandler = httperror.Handler
-	e.Use(middleware.Recover())
-	e.Use(middleware.RequestID())
+	e := server.NewEcho(cfg.AppEnv == "production")
 
 	v2 := e.Group("/v2")
 	authCtrl.Register(v2.Group("/auth"))

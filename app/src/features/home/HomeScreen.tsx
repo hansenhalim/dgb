@@ -132,7 +132,7 @@ export default function HomeScreen() {
               <ChevronRight size={12} color={colors.inkDim} />
             </View>
             <View style={styles.statKeyRow}>
-              {vm.pendingIncoming ? <View style={styles.dot} /> : null}
+              {vm.hasIncomingTransferRequest ? <View style={styles.dot} /> : null}
               <Text style={styles.statKey}>KARTU RFID</Text>
             </View>
             <View style={styles.statBigRow}>

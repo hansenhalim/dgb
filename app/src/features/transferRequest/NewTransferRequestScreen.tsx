@@ -120,8 +120,7 @@ export default function NewTransferRequestScreen() {
                     <View style={styles.receiverMain}>
                       <Text style={styles.receiverName}>{g.name}</Text>
                       <Text style={styles.receiverMeta}>
-                        {g.isAvailable ? "Tersedia" : "Tidak tersedia"} ·{" "}
-                        {g.currentQuota} kuota
+                        {g.isAvailable ? "Tersedia" : "Tidak tersedia"}
                       </Text>
                     </View>
                     {selected ? (
@@ -166,15 +165,6 @@ export default function NewTransferRequestScreen() {
                   ]}
                 >
                   {vm.impact.sourceBefore} → {vm.impact.sourceAfter}
-                </Text>
-              </View>
-              <View style={styles.impactRow}>
-                <Text style={styles.impactLabel}>
-                  {vm.receivers.find((g) => g.id === vm.selectedReceiverId)
-                    ?.name ?? "Tujuan"}
-                </Text>
-                <Text style={styles.impactValues}>
-                  {vm.impact.destBefore} → {vm.impact.destAfter}
                 </Text>
               </View>
             </View>
