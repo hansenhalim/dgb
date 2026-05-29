@@ -130,6 +130,7 @@ export default function GuestFormScreen() {
                 style={[styles.input, vm.isProcessing && styles.inputDisabled]}
                 value={vm.nik}
                 onChangeText={vm.setNik}
+                onBlur={vm.normalizeNik}
                 keyboardType="number-pad"
                 maxLength={16}
                 autoCorrect={false}

@@ -46,6 +46,7 @@ export type GuestFormViewModel = {
   keperluan: Keperluan | null;
   keperluanOther: string;
   setNik: (v: string) => void;
+  normalizeNik: () => void;
   setNama: (v: string) => void;
   setPlat: (v: string) => void;
   setTujuan: (v: string) => void;
@@ -65,6 +66,24 @@ const formatPlate = (raw: string) =>
     .replace(/(\d)([A-Z])/g, "$1 $2");
 
 const sanitizeNik = (raw: string) => raw.replace(/\D/g, "").slice(0, 16);
+
+/**
+ * Finalize an OCR'd identity number for storage, or null to reject the read.
+ * A NIK (KTP) arrives as 16 digits and is stored as-is. A SIM number arrives
+ * 12 (old) or 14 (new) digits and is left-padded with zeros to 16 — every
+ * identity is normalized to 16 digits, which the card schema requires. Any
+ * other length is treated as a misread and rejected, leaving the field blank
+ * for manual entry. A short value tagged as NIK is NOT padded: a 13-digit NIK
+ * is a misread, not a SIM, so it must fail loudly rather than become a wrong
+ * zero-padded value.
+ */
+const finalizeOcrId = (digits: string, fromSim: boolean): string | null => {
+  if (digits.length === 16) return digits;
+  if (fromSim && (digits.length === 12 || digits.length === 14)) {
+    return digits.padStart(16, "0");
+  }
+  return null;
+};
 
 async function getFileSize(uri: string): Promise<number> {
   const res = await fetch(uri);
@@ -118,6 +137,14 @@ export function useGuestFormViewModel(
   const setNik = useCallback((v: string) => {
     setError(null);
     setNikRaw(sanitizeNik(v));
+  }, []);
+  // A manually-typed SIM (12 or 14 digits) is left-padded to 16 when the field
+  // loses focus, mirroring the OCR path. OCR-filled and 16-digit NIK values are
+  // already 16 and pass through untouched.
+  const normalizeNik = useCallback(() => {
+    setNikRaw((curr) =>
+      curr.length === 12 || curr.length === 14 ? curr.padStart(16, "0") : curr,
+    );
   }, []);
   const setPlat = useCallback((v: string) => {
     setError(null);
@@ -241,8 +268,12 @@ export function useGuestFormViewModel(
 
         const extracted = await idExtractor.extract(saved.uri);
         if (cancelled) return;
-        const idNumber = extracted.nik ?? extracted.nomorSim;
-        if (idNumber) setNikRaw(sanitizeNik(idNumber));
+        const idNumber = extracted.nik || extracted.nomorSim;
+        const fromSim = !extracted.nik && !!extracted.nomorSim;
+        if (idNumber) {
+          const finalized = finalizeOcrId(sanitizeNik(idNumber), fromSim);
+          if (finalized) setNikRaw(finalized);
+        }
         if (extracted.nama) setNama(extracted.nama);
       } catch {
         // Allow manual entry on OCR failure.
@@ -270,7 +301,7 @@ export function useGuestFormViewModel(
     !!rfidKey &&
     !!activeGate &&
     activeGate.id !== 4 &&
-    nik.trim().length > 0 &&
+    nik.length === 16 &&
     nama.trim().length > 0 &&
     tujuanValid &&
     keperluanComplete;
@@ -372,6 +403,7 @@ export function useGuestFormViewModel(
     keperluan,
     keperluanOther,
     setNik,
+    normalizeNik,
     setNama,
     setPlat,
     setTujuan,
