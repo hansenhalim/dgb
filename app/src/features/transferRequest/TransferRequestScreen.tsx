@@ -28,8 +28,8 @@ export default function TransferRequestScreen() {
 
   const onReject = (item: TransferRequestItem) => {
     Alert.alert(
-      "Tolak permintaan?",
-      `Permintaan ${item.amount} kartu dari ${item.fromGate.name} akan dibatalkan. Stok tidak berpindah.`,
+      "Tolak transfer?",
+      `Transfer ${item.amount} kartu dari ${item.fromGate.name} akan dibatalkan. Stok tidak berpindah.`,
       [
         { text: "Batal", style: "cancel" },
         {
@@ -58,7 +58,7 @@ export default function TransferRequestScreen() {
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.brandKey}>STOK KARTU</Text>
-          <Text style={styles.title}>Permintaan Transfer</Text>
+          <Text style={styles.title}>Transfer Kartu</Text>
         </View>
         <View style={styles.backButton} />
       </View>
@@ -185,7 +185,7 @@ export default function TransferRequestScreen() {
             style={styles.cta}
             onPress={() => router.push("/transfer-request-new")}
           >
-            <Text style={styles.ctaText}>Buat Permintaan</Text>
+            <Text style={styles.ctaText}>Transfer Kartu</Text>
           </Pressable>
         </SafeAreaView>
       ) : null}

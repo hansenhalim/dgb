@@ -96,10 +96,13 @@ function Row({
   const isOutside =
     entry.currentPosition === "OUT" || entry.currentPosition === "TRNST";
   return (
-    <View style={[styles.row, isOutside && styles.rowOutside]}>
-      <Text style={[styles.plate, isOutside && styles.plateOutside]}>
-        {entry.vehiclePlateNumber}
-      </Text>
+    <View style={[styles.row, isOutside ? styles.rowOutside : styles.rowActive]}>
+      <View style={styles.topRow}>
+        <Text style={[styles.plate, isOutside && styles.plateOutside]}>
+          {entry.vehiclePlateNumber}
+        </Text>
+        <Text style={styles.time}>{formatRelativeID(entry.createdAt)}</Text>
+      </View>
       <Text style={styles.meta} numberOfLines={1}>
         <Text style={[styles.position, isOutside && styles.positionOutside]}>
           {POSITION_LABEL[entry.currentPosition]}
@@ -107,7 +110,6 @@ function Row({
         {"  →  "}
         <Text style={styles.destination}>{entry.destinationName}</Text>
       </Text>
-      <Text style={styles.time}>{formatRelativeID(entry.createdAt)}</Text>
     </View>
   );
 }
@@ -166,19 +168,27 @@ const makeStyles = (colors: Colors) =>
       height: 8,
     },
     row: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
+      flexDirection: "column",
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.rule,
       borderRadius: radius.base,
       paddingVertical: 12,
       paddingHorizontal: 14,
+      gap: 4,
+    },
+    topRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      justifyContent: "space-between",
       gap: 12,
     },
     rowOutside: {
       opacity: 0.6,
+    },
+    rowActive: {
+      backgroundColor: "rgba(34,197,94,0.08)",
+      borderColor: "rgba(34,197,94,0.35)",
     },
     plate: {
       fontFamily: fonts.mono,
@@ -191,8 +201,6 @@ const makeStyles = (colors: Colors) =>
       color: colors.ink2,
     },
     meta: {
-      flex: 1,
-      textAlign: "center",
       fontFamily: fonts.mono,
       fontSize: 12,
       color: colors.inkMuted,
@@ -200,7 +208,7 @@ const makeStyles = (colors: Colors) =>
     },
     time: {
       fontFamily: fonts.mono,
-      fontSize: 11,
+      fontSize: 13,
       color: colors.inkMuted,
       letterSpacing: 0.4,
     },
