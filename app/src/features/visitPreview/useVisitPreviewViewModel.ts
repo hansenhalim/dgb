@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useActiveGate } from "@/config/activeGate";
 import { useServices } from "@/config/container";
 import type { CardStateResponse } from "@/domain/ports";
+import { decodeLegacyCardAsV1 } from "@/domain/legacyVisitCard";
 import {
   CARD_PAYLOAD_BLANK_HEX,
   decodeVisitCardV1,
@@ -36,6 +37,9 @@ export type SuccessOutcome = {
 export type VisitPreviewViewModel = {
   decoded: DecodedVisitCard | null;
   decodeError: string | null;
+  /** True after tryLegacy() was called (regardless of outcome). */
+  legacyAttempted: boolean;
+  tryLegacy: () => void;
   phase: ActionPhase;
   failure: ActionFailure | null;
   /** True after the API succeeded; only the failing card-write step needs retrying. */
@@ -71,6 +75,20 @@ export function useVisitPreviewViewModel({
     }
   }, [secretHex]);
 
+  const [legacyDecoded, setLegacyDecoded] = useState<DecodedVisitCard | null>(null);
+  const [legacyAttempted, setLegacyAttempted] = useState(false);
+
+  const tryLegacy = useCallback(() => {
+    setLegacyAttempted(true);
+    try {
+      setLegacyDecoded(decodeLegacyCardAsV1(secretHex));
+    } catch {
+      setLegacyDecoded(null);
+    }
+  }, [secretHex]);
+
+  const decoded = decodedOrError.decoded ?? legacyDecoded;
+
   const [phase, setPhase] = useState<ActionPhase>("idle");
   const [failure, setFailure] = useState<ActionFailure | null>(null);
   const [apiCommitted, setApiCommitted] = useState(false);
@@ -84,13 +102,13 @@ export function useVisitPreviewViewModel({
   const [success, setSuccess] = useState<SuccessOutcome | null>(null);
 
   const checkout = useCallback(async () => {
-    if (!decodedOrError.decoded) return;
+    if (!decoded) return;
     if (phase !== "idle") return;
     if (!activeGate) {
       setFailure({ kind: "checkoutApi", message: "Pilih gerbang aktif dulu." });
       return;
     }
-    const visitId = decodedOrError.decoded.visitId;
+    const visitId = decoded.visitId;
     const gateId = activeGate.id;
     setPhase("checkingOut");
     setFailure(null);
@@ -124,7 +142,7 @@ export function useVisitPreviewViewModel({
   }, [
     activeGate,
     apiCommitted,
-    decodedOrError.decoded,
+    decoded,
     phase,
     rfid,
     rfidKey,
@@ -132,7 +150,7 @@ export function useVisitPreviewViewModel({
   ]);
 
   const transitEnter = useCallback(async () => {
-    if (!decodedOrError.decoded) return;
+    if (!decoded) return;
     if (phase !== "idle") return;
     if (!activeGate) {
       setFailure({
@@ -141,7 +159,6 @@ export function useVisitPreviewViewModel({
       });
       return;
     }
-    const decoded = decodedOrError.decoded;
     const visitId = decoded.visitId;
     const gateId = activeGate.id;
     setPhase("transitEntering");
@@ -181,7 +198,7 @@ export function useVisitPreviewViewModel({
   }, [
     activeGate,
     apiCommitted,
-    decodedOrError.decoded,
+    decoded,
     pendingResponse,
     phase,
     rfid,
@@ -190,7 +207,7 @@ export function useVisitPreviewViewModel({
   ]);
 
   const transit = useCallback(async () => {
-    if (!decodedOrError.decoded) return;
+    if (!decoded) return;
     if (phase !== "idle") return;
     if (!activeGate) {
       setFailure({
@@ -199,7 +216,6 @@ export function useVisitPreviewViewModel({
       });
       return;
     }
-    const decoded = decodedOrError.decoded;
     const visitId = decoded.visitId;
     const gateId = activeGate.id;
     setPhase("transiting");
@@ -239,7 +255,7 @@ export function useVisitPreviewViewModel({
   }, [
     activeGate,
     apiCommitted,
-    decodedOrError.decoded,
+    decoded,
     pendingResponse,
     phase,
     rfid,
@@ -248,8 +264,10 @@ export function useVisitPreviewViewModel({
   ]);
 
   return {
-    decoded: decodedOrError.decoded,
+    decoded,
     decodeError: decodedOrError.error,
+    legacyAttempted,
+    tryLegacy,
     phase,
     failure,
     apiCommitted,

@@ -117,16 +117,35 @@ export default function VisitPreviewScreen() {
     }, [goHome]),
   );
 
-  if (vm.decodeError || !vm.decoded) {
+  // Gate on `decoded` alone: a successful legacy retry sets `decoded` while
+  // `decodeError` (the v1 failure) stays set, so the two now diverge.
+  if (!vm.decoded) {
+    const legacyFailed = vm.legacyAttempted;
     return (
       <SafeAreaView style={styles.screen} edges={["top", "left", "right", "bottom"]}>
         <AppStatusBar />
         <View style={styles.errorBody}>
           <Text style={styles.brandKey}>FORMAT KARTU</Text>
           <Text style={styles.title}>Kartu tidak dikenali</Text>
-          <Text style={styles.subtitle}>
-            {vm.decodeError ?? "Format kartu tidak didukung."}
-          </Text>
+
+          <View style={styles.errorBanner}>
+            <WarningTriangle size={20} color={colors.red} />
+            <View style={styles.errorBannerBody}>
+              <Text style={styles.errorBannerTitle}>
+                FORMAT KARTU TIDAK DIKENAL
+              </Text>
+              <Text style={styles.errorBannerText}>
+                {legacyFailed
+                  ? "Format lama juga tidak terbaca. Kartu ini tidak dapat digunakan."
+                  : (vm.decodeError ?? "Format kartu tidak didukung.")}
+              </Text>
+              {!legacyFailed ? (
+                <Pressable style={styles.retryBtn} onPress={vm.tryLegacy}>
+                  <Text style={styles.retryBtnText}>Coba Format Lama</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
         </View>
         <SafeAreaView style={styles.fabBar} edges={["bottom", "left", "right"]}>
           <Pressable style={styles.cta} onPress={goHome}>
@@ -530,11 +549,6 @@ const makeStyles = (colors: Colors) =>
       color: colors.ink,
       letterSpacing: -0.3,
     },
-    subtitle: {
-      fontSize: 14,
-      color: colors.inkMuted,
-      lineHeight: 20,
-    },
     fieldList: {
       backgroundColor: colors.surface,
       borderWidth: 1,
@@ -585,6 +599,20 @@ const makeStyles = (colors: Colors) =>
       fontSize: 12,
       color: colors.inkMuted,
       fontStyle: "italic",
+    },
+    retryBtn: {
+      alignSelf: "flex-start",
+      borderWidth: 1,
+      borderColor: colors.red,
+      borderRadius: radius.sm,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      marginTop: 4,
+    },
+    retryBtnText: {
+      color: colors.red,
+      fontSize: 13,
+      fontWeight: "600",
     },
     cta: {
       alignItems: "center",
