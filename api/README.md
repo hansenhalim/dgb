@@ -54,8 +54,8 @@ go build -o bin/api ./cmd/api
 Container image (multi-stage, scratch base):
 
 ```bash
-docker build -t dgb-api .
-docker run --rm -p 8080:8080 --env-file .env dgb-api
+docker build -t dgbapi .
+docker run --rm -p 8080:8080 --env-file .env dgbapi
 ```
 
 ---
