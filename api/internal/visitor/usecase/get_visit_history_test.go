@@ -55,8 +55,8 @@ func TestGetVisitHistory_SortsByPositionPriority(t *testing.T) {
 	assert.Equal(t, villa1ID, out[0].ID)
 	assert.Equal(t, villa2ID, out[1].ID)
 	assert.Equal(t, exclusiveID, out[2].ID)
-	assert.Equal(t, outsideID, out[3].ID)
-	assert.Equal(t, transitID, out[4].ID)
+	assert.Equal(t, transitID, out[3].ID)
+	assert.Equal(t, outsideID, out[4].ID)
 }
 
 func TestGetVisitHistory_StableWithinSamePriority(t *testing.T) {

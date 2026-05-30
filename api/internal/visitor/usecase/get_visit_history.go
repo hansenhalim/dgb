@@ -32,8 +32,10 @@ func (u *getVisitHistory) Execute(ctx context.Context, gateID int16) ([]entity.V
 	return visits, nil
 }
 
-// positionPriority mirrors the Laravel history endpoint's ordering: visits
-// inside the villas come first, then the exclusive area, then OUTSIDE / TRANSIT.
+// positionPriority orders the history list: on-site visits first — the villas,
+// then the exclusive area, then in-transit — and finally OUTSIDE (checked out).
+// Keeping every on-site position ahead of OUTSIDE groups people still on the
+// property together, matching the repository's LIMIT-survival ordering.
 func positionPriority(p entity.CurrentPosition) int {
 	switch p {
 	case entity.CurrentPositionVilla1:
@@ -42,9 +44,9 @@ func positionPriority(p entity.CurrentPosition) int {
 		return 2
 	case entity.CurrentPositionExclusive:
 		return 3
-	case entity.CurrentPositionOutside:
-		return 4
 	case entity.CurrentPositionInTransit:
+		return 4
+	case entity.CurrentPositionOutside:
 		return 5
 	default:
 		return 999

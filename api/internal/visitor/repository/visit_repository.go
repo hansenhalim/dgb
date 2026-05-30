@@ -42,15 +42,18 @@ func (r *VisitRepository) FindLatestByVisitor(ctx context.Context, visitorID uui
 	}, nil
 }
 
-// ListByGate returns the 50 most recent visits where either checkin_gate_id or
-// checkout_gate_id matches gateID, ordered by created_at DESC. Only the columns
-// used by the history endpoint are projected. Mirrors the Laravel
-// `Visit::history` query.
+// ListByGate returns up to 50 visits where either checkin_gate_id or
+// checkout_gate_id matches gateID. On-site visits (current_position != OUT) are
+// ordered ahead of checked-out (OUT) ones, then by created_at DESC, so the LIMIT
+// only ever trims the OUT tail — every on-site visit survives regardless of age.
+// Only the columns used by the history endpoint are projected. The usecase
+// applies the final fine-grained position ordering.
 func (r *VisitRepository) ListByGate(ctx context.Context, gateID int16) ([]entity.Visit, error) {
 	var rows []visit
 	err := tx.DB(ctx, r.db).
 		Select("id", "vehicle_plate_number", "current_position", "destination_name", "created_at").
 		Where("checkin_gate_id = ? OR checkout_gate_id = ?", gateID, gateID).
+		Order("current_position = 'OUT'").
 		Order("created_at DESC").
 		Limit(50).
 		Find(&rows).Error
