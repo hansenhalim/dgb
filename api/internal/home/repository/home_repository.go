@@ -21,7 +21,7 @@ func NewHomeRepository(db *gorm.DB) *HomeRepository {
 // dashboard response. Every numeric field is scoped to a single gate.
 type SnapshotCounts struct {
 	GateQuota                  int16 // this gate's gates.current_quota (0 if gate id unknown)
-	ActiveVisits               int64 // visits checked in at this gate, still open
+	ActiveVisits               int64 // visits checked in at this gate, still on-site (current_position <> OUT)
 	TodayVisits                int64 // visits checked in at this gate today (UTC)
 	HasIncomingTransferRequest bool  // a PENDING transfer with to_gate_id = this gate
 }
@@ -31,6 +31,13 @@ type SnapshotCounts struct {
 // package free of a cross-package dependency on a sibling repo's private
 // helpers. Keep in sync if that encoding ever changes.
 const transferStatusPending = "PEND"
+
+// positionOutside mirrors the DB-side current_position encoding owned by the
+// visitor repository (positionToDB). It marks a visit as checked out / off-site.
+// "Active" counts the complement (still on-site), matching how the visit-history
+// endpoint distinguishes on-site from OUT rows. Duplicated here for the same
+// reason as transferStatusPending; keep in sync if that encoding ever changes.
+const positionOutside = "OUT"
 
 func (r *HomeRepository) Snapshot(ctx context.Context, gateID int16, nowUTC time.Time) (*SnapshotCounts, error) {
 	var out SnapshotCounts
@@ -45,7 +52,7 @@ func (r *HomeRepository) Snapshot(ctx context.Context, gateID int16, nowUTC time
 
 	if err := r.db.WithContext(ctx).
 		Table("visits").
-		Where("checkin_gate_id = ? AND checkout_at IS NULL", gateID).
+		Where("checkin_gate_id = ? AND current_position <> ?", gateID, positionOutside).
 		Count(&out.ActiveVisits).Error; err != nil {
 		return nil, err
 	}
