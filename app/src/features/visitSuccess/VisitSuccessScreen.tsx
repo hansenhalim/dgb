@@ -128,12 +128,14 @@ export default function VisitSuccessScreen() {
       </View>
 
       <SafeAreaView style={styles.fabBar} edges={["bottom", "left", "right"]}>
-        <Pressable style={styles.cta} onPress={onPulse}>
-          <Text style={styles.ctaText}>Buka Boom Gate</Text>
-        </Pressable>
-        <Pressable style={styles.secondary} onPress={goHome}>
-          <Text style={styles.secondaryText}>Lewati ke Beranda</Text>
-        </Pressable>
+        <View style={styles.ctaRow}>
+          <Pressable style={[styles.secondary, styles.flexBtn]} onPress={goHome}>
+            <Text style={styles.secondaryText}>Lewati ke Beranda</Text>
+          </Pressable>
+          <Pressable style={[styles.cta, styles.flexBtn]} onPress={onPulse}>
+            <Text style={styles.ctaText}>Buka Boom Gate</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
     </SafeAreaView>
   );
@@ -226,6 +228,13 @@ const makeStyles = (colors: Colors) =>
       paddingBottom: 12,
       gap: 4,
     },
+    ctaRow: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    flexBtn: {
+      flex: 1,
+    },
     cta: {
       alignItems: "center",
       justifyContent: "center",
@@ -244,7 +253,11 @@ const makeStyles = (colors: Colors) =>
     secondary: {
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: 16,
+      borderWidth: 1,
+      borderColor: colors.ruleStrong,
+      borderRadius: radius.base,
+      paddingVertical: 18,
+      paddingHorizontal: 20,
     },
     secondaryText: {
       color: colors.inkMuted,

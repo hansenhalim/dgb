@@ -619,6 +619,12 @@ export class BleRfidReader implements RfidReader {
         resolve: (resp) => finish(() => resolve(resp)),
         reject: (err) => finish(() => reject(err)),
       };
+      // Commands are strictly serialized (one waiter at a time), so any bytes
+      // still buffered here are an un-terminated fragment left over from a
+      // timed-out/aborted/interrupted prior exchange. Drop them before issuing
+      // this command, otherwise the next '\n' resolves us with stale+new data
+      // concatenated (e.g. corrupting a READ's 1024-hex DATA reply).
+      this.rxBuffer = "";
       this.waiter = waiter;
 
       const timeoutId = setTimeout(

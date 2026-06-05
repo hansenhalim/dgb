@@ -338,13 +338,13 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   },
   input: {
     textTransform: "uppercase",
-    fontSize: 16,
+    fontSize: 18,
     color: colors.ink,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.ruleStrong,
     borderRadius: radius.base,
-    paddingVertical: 14,
+    paddingVertical: 13,
     paddingHorizontal: 14,
   },
   inputDisabled: {

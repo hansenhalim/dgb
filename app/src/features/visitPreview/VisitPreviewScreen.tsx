@@ -349,73 +349,88 @@ export default function VisitPreviewScreen() {
           </View>
         ) : null}
 
-        {showMasuk ? (
-          <Pressable
-            style={[styles.cta, transitEnterDisabled && styles.ctaDisabled]}
-            disabled={transitEnterDisabled}
-            onPress={vm.transitEnter}
-          >
-            <Text
+        <View style={styles.ctaRow}>
+          {showTransit ? (
+            <Pressable
               style={[
-                styles.ctaText,
-                transitEnterDisabled && styles.ctaTextDisabled,
+                styles.secondaryCta,
+                styles.flexBtn,
+                transitDisabled && styles.secondaryCtaDisabled,
               ]}
+              disabled={transitDisabled}
+              onPress={vm.transit}
             >
-              {transitEnterLabel}
-            </Text>
-          </Pressable>
-        ) : null}
-        {showCheckout ? (
-          <Pressable
-            style={[styles.cta, checkoutDisabled && styles.ctaDisabled]}
-            disabled={checkoutDisabled}
-            onPress={vm.checkout}
-          >
-            <Text
+              <Text
+                style={[
+                  styles.secondaryCtaText,
+                  transitDisabled && styles.secondaryCtaTextDisabled,
+                ]}
+              >
+                {transitLabel}
+              </Text>
+            </Pressable>
+          ) : null}
+          {showMasuk ? (
+            <Pressable
               style={[
-                styles.ctaText,
-                checkoutDisabled && styles.ctaTextDisabled,
+                styles.cta,
+                styles.flexBtn,
+                transitEnterDisabled && styles.ctaDisabled,
               ]}
+              disabled={transitEnterDisabled}
+              onPress={vm.transitEnter}
             >
-              {checkoutLabel}
-            </Text>
-          </Pressable>
-        ) : null}
-        {showExit ? (
-          <Pressable
-            style={[styles.cta, transitDisabled && styles.ctaDisabled]}
-            disabled={transitDisabled}
-            onPress={vm.transit}
-          >
-            <Text
+              <Text
+                style={[
+                  styles.ctaText,
+                  transitEnterDisabled && styles.ctaTextDisabled,
+                ]}
+              >
+                {transitEnterLabel}
+              </Text>
+            </Pressable>
+          ) : null}
+          {showCheckout ? (
+            <Pressable
               style={[
-                styles.ctaText,
-                transitDisabled && styles.ctaTextDisabled,
+                styles.cta,
+                styles.flexBtn,
+                checkoutDisabled && styles.ctaDisabled,
               ]}
+              disabled={checkoutDisabled}
+              onPress={vm.checkout}
             >
-              {exitLabel}
-            </Text>
-          </Pressable>
-        ) : null}
-        {showTransit ? (
-          <Pressable
-            style={[
-              styles.secondaryCta,
-              transitDisabled && styles.secondaryCtaDisabled,
-            ]}
-            disabled={transitDisabled}
-            onPress={vm.transit}
-          >
-            <Text
+              <Text
+                style={[
+                  styles.ctaText,
+                  checkoutDisabled && styles.ctaTextDisabled,
+                ]}
+              >
+                {checkoutLabel}
+              </Text>
+            </Pressable>
+          ) : null}
+          {showExit ? (
+            <Pressable
               style={[
-                styles.secondaryCtaText,
-                transitDisabled && styles.secondaryCtaTextDisabled,
+                styles.cta,
+                styles.flexBtn,
+                transitDisabled && styles.ctaDisabled,
               ]}
+              disabled={transitDisabled}
+              onPress={vm.transit}
             >
-              {transitLabel}
-            </Text>
-          </Pressable>
-        ) : null}
+              <Text
+                style={[
+                  styles.ctaText,
+                  transitDisabled && styles.ctaTextDisabled,
+                ]}
+              >
+                {exitLabel}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
       </SafeAreaView>
     </SafeAreaView>
   );
@@ -565,6 +580,13 @@ const makeStyles = (colors: Colors) =>
       paddingTop: 12,
       paddingBottom: 12,
       gap: 8,
+    },
+    ctaRow: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    flexBtn: {
+      flex: 1,
     },
     errorBanner: {
       flexDirection: "row",

@@ -160,7 +160,7 @@ const makeStyles = (colors: Colors) =>
       borderWidth: 1,
       borderColor: colors.ruleStrong,
       borderRadius: radius.base,
-      paddingVertical: 14,
+      paddingVertical: 13,
       paddingHorizontal: 14,
     },
     inputBoxDisabled: {
@@ -172,7 +172,7 @@ const makeStyles = (colors: Colors) =>
     inputText: {
       flex: 1,
       padding: 0,
-      fontSize: 16,
+      fontSize: 18,
       color: colors.ink,
     },
     inputTextDisabled: {

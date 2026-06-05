@@ -50,11 +50,17 @@ export default function CaptureIdScreen() {
           </Text>
         </View>
         <View style={styles.permissionActions}>
-          <Pressable style={styles.cta} onPress={requestPermission}>
-            <Text style={styles.ctaText}>Izinkan Kamera</Text>
-          </Pressable>
-          <Pressable style={styles.secondary} onPress={() => router.back()}>
+          <Pressable
+            style={[styles.secondary, styles.flexBtn]}
+            onPress={() => router.back()}
+          >
             <Text style={styles.secondaryText}>Batal</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.cta, styles.flexBtn]}
+            onPress={requestPermission}
+          >
+            <Text style={styles.ctaText}>Izinkan Kamera</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -124,9 +130,13 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     gap: 12,
   },
   permissionActions: {
+    flexDirection: "row",
     padding: 16,
     paddingBottom: 12,
-    gap: 4,
+    gap: 8,
+  },
+  flexBtn: {
+    flex: 1,
   },
   header: {
     flexDirection: "row",
@@ -225,7 +235,11 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   secondary: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: colors.ruleStrong,
+    borderRadius: radius.base,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
   },
   secondaryText: {
     color: colors.inkMuted,
