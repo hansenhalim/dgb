@@ -8,7 +8,7 @@ import (
 	"github.com/hansenhalim/dgb/api/internal/entity"
 )
 
-const tokenTTL = 12 * time.Hour
+const tokenTTL = 15 * time.Hour
 
 type VerifySecretInput struct {
 	UID        []byte
