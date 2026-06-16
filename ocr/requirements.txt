@@ -18,34 +18,28 @@ colorlog==6.10.1
     # via rapidocr
 fastapi==0.135.3
     # via -r requirements.in
-flatbuffers==25.12.19
-    # via onnxruntime
 h11==0.16.0
     # via uvicorn
 idna==3.11
     # via
     #   anyio
     #   requests
-mpmath==1.3.0
-    # via sympy
 numpy==2.4.4
     # via
-    #   onnxruntime
     #   opencv-python
+    #   openvino
     #   rapidocr
     #   shapely
 omegaconf==2.3.0
     # via rapidocr
-onnxruntime==1.24.4
-    # via -r requirements.in
 opencv-python==4.13.0.92
     # via rapidocr
-packaging==26.1
-    # via onnxruntime
+openvino==2026.2.0
+    # via -r requirements.in
+openvino-telemetry==2025.2.0
+    # via openvino
 pillow==12.2.0
     # via rapidocr
-protobuf==7.34.1
-    # via onnxruntime
 pyclipper==1.4.0
     # via rapidocr
 pydantic==2.13.0
@@ -70,8 +64,6 @@ six==1.17.0
     # via rapidocr
 starlette==1.0.0
     # via fastapi
-sympy==1.14.0
-    # via onnxruntime
 tqdm==4.67.3
     # via rapidocr
 typing-extensions==4.15.0
