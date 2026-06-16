@@ -8,28 +8,28 @@
     "sim_old": 1.0
   },
   "field_accuracy": {
-    "overall": 0.9188861985472155,
+    "overall": 0.9164648910411622,
     "agama": 1.0,
-    "alamat": 0.5952380952380952,
+    "alamat": 0.5793650793650794,
     "berlaku_hingga": 1.0,
-    "golongan_darah": 0.8015873015873016,
+    "golongan_darah": 0.7936507936507936,
     "jenis_kelamin": 1.0,
     "jenis_sim": 1.0,
-    "kecamatan": 0.9473684210526315,
+    "kecamatan": 0.9210526315789473,
     "kelurahan": 0.868421052631579,
     "kewarganegaraan": 0.9736842105263158,
-    "kota": 0.631578947368421,
-    "nama": 0.9285714285714286,
+    "kota": 0.6842105263157895,
+    "nama": 0.9365079365079365,
     "nik": 0.9736842105263158,
     "nomor_sim": 0.9545454545454546,
-    "pekerjaan": 0.9920634920634921,
+    "pekerjaan": 0.9841269841269841,
     "provinsi": 1.0,
     "rt": 1.0,
     "rw": 1.0,
     "status_perkawinan": 1.0,
     "tanggal_berlaku": 1.0,
     "tanggal_lahir": 0.9603174603174603,
-    "tempat_lahir": 0.8888888888888888,
-    "tempat_pembuatan": 0.9772727272727273
+    "tempat_lahir": 0.8809523809523809,
+    "tempat_pembuatan": 0.9659090909090909
   }
 }
