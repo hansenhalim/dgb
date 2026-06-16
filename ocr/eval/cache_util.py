@@ -5,13 +5,16 @@ import json
 from pathlib import Path
 
 from extractors.ocr_item import OcrItem
-from extractors.pipeline import run_ocr
+from extractors.pipeline import OCR_CONFIG_ID, run_ocr
 
 CACHE_DIR = Path(__file__).parent / "cache"
 
 
 def cached_ocr(image_bytes: bytes) -> list[OcrItem]:
-    cache_path = CACHE_DIR / f"{hashlib.sha256(image_bytes).hexdigest()}.json"
+    # Key on both the image and the OCR config so changing the engine or the
+    # noise guard invalidates the cache instead of returning stale OCR output.
+    key = hashlib.sha256(image_bytes + OCR_CONFIG_ID.encode()).hexdigest()
+    cache_path = CACHE_DIR / f"{key}.json"
 
     if cache_path.exists():
         data = json.loads(cache_path.read_text())

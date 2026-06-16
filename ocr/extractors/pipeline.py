@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from rapidocr import EngineType, LangRec, OCRVersion, RapidOCR
 
 from .clean_extracted_values import CleanExtractedValues
@@ -9,22 +11,22 @@ from .extract_fields import ExtractFields
 from .label_dictionary import LABELS
 from .ocr_item import OcrItem
 
-engine = RapidOCR(
-    params={
-        "Global.use_cls": False,
-        # Pin every module to OpenVINO. RapidOCR constructs the cls session at
-        # init even with use_cls False, so leaving cls on the onnxruntime
-        # default would require shipping onnxruntime just to start up.
-        "Cls.engine_type": EngineType.OPENVINO,
-        "Det.engine_type": EngineType.OPENVINO,
-        "Det.ocr_version": OCRVersion.PPOCRV5,
-        "Rec.engine_type": EngineType.OPENVINO,
-        "Rec.lang_type": LangRec.EN,
-        "Rec.ocr_version": OCRVersion.PPOCRV5,
-        "EngineConfig.openvino.inference_num_threads": 4,
-        "EngineConfig.openvino.performance_hint": "LATENCY",
-    }
-)
+ENGINE_PARAMS = {
+    "Global.use_cls": False,
+    # Pin every module to OpenVINO. RapidOCR constructs the cls session at
+    # init even with use_cls False, so leaving cls on the onnxruntime
+    # default would require shipping onnxruntime just to start up.
+    "Cls.engine_type": EngineType.OPENVINO,
+    "Det.engine_type": EngineType.OPENVINO,
+    "Det.ocr_version": OCRVersion.PPOCRV5,
+    "Rec.engine_type": EngineType.OPENVINO,
+    "Rec.lang_type": LangRec.EN,
+    "Rec.ocr_version": OCRVersion.PPOCRV5,
+    "EngineConfig.openvino.inference_num_threads": 4,
+    "EngineConfig.openvino.performance_hint": "LATENCY",
+}
+
+engine = RapidOCR(params=ENGINE_PARAMS)
 
 
 # A blank or non-document image can make the detector surface a single stray
@@ -35,6 +37,19 @@ engine = RapidOCR(
 # score well above this threshold.
 SPARSE_DETECTION_LIMIT = 2
 MIN_SINGLE_CHAR_SCORE = 0.6
+
+
+# Stable signature of everything that affects run_ocr output. The eval cache
+# keys on this, so swapping the engine or retuning the noise guard invalidates
+# stale OCR results instead of silently reusing them.
+OCR_CONFIG_ID = json.dumps(
+    {
+        "params": {k: str(v) for k, v in ENGINE_PARAMS.items()},
+        "sparse_detection_limit": SPARSE_DETECTION_LIMIT,
+        "min_single_char_score": MIN_SINGLE_CHAR_SCORE,
+    },
+    sort_keys=True,
+)
 
 
 def run_ocr(image_bytes: bytes) -> list[OcrItem]:
