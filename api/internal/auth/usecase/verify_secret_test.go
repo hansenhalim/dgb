@@ -48,7 +48,7 @@ func TestVerifySecret_Success(t *testing.T) {
 	secretHex := strings.Repeat("AB", 512)
 	secretBytes, _ := hex.DecodeString(secretHex)
 	now := time.Date(2026, 5, 16, 12, 0, 0, 0, time.UTC)
-	expectedExpiry := now.Add(12 * time.Hour)
+	expectedExpiry := now.Add(15 * time.Hour)
 
 	sut.rfidRepo.EXPECT().FindGuardByUID(context.Background(), uid).
 		Return(&entity.Rfid{Staff: &entity.Staff{ID: staffID, Name: "Jokul Doe", SecretKey: storedSecretHash}}, nil).Once()
@@ -137,7 +137,7 @@ func TestVerifySecret_IssuerError(t *testing.T) {
 		Return(&entity.Rfid{Staff: &entity.Staff{ID: staffID, SecretKey: "h"}}, nil).Once()
 	sut.digester.EXPECT().SHA256Hex(secretBytes).Return("h").Once()
 	sut.clock.EXPECT().Now().Return(now).Once()
-	sut.issuer.EXPECT().Issue(staffID.String(), now.Add(12*time.Hour)).Return("", signErr).Once()
+	sut.issuer.EXPECT().Issue(staffID.String(), now.Add(15*time.Hour)).Return("", signErr).Once()
 
 	out, err := sut.uc.Execute(context.Background(), usecase.VerifySecretInput{
 		UID:        uid,
