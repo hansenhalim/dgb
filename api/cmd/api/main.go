@@ -90,7 +90,7 @@ func main() {
 	getRfidKey := rfidusecase.NewGetRfidKey(rfidRepo)
 	getVisitorStatus := visitorusecase.NewGetVisitorStatus(visitorRepo, visitRepo, sha256)
 	createVisit := visitorusecase.NewCreateVisit(rfidRepo, visitorRepo, visitRepo, gateRepo, sha256, encryptor, systemClock, txRunner)
-	checkoutVisit := visitorusecase.NewCheckoutVisit(visitRepo, visitorRepo, gateRepo, systemClock, txRunner)
+	checkoutVisit := visitorusecase.NewCheckoutVisit(visitRepo, visitorRepo, gateRepo, rfidRepo, systemClock, txRunner)
 	transitVisit := visitorusecase.NewTransitVisit(visitRepo)
 	transitEnterVisit := visitorusecase.NewTransitEnterVisit(visitRepo)
 	getVisitHistory := visitorusecase.NewGetVisitHistory(visitRepo)

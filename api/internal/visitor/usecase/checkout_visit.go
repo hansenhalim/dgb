@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -22,6 +21,7 @@ type checkoutVisit struct {
 	visitRepo   VisitRepository
 	visitorRepo VisitorRepository
 	gateRepo    GateRepository
+	rfidRepo    RfidRepository
 	clock       Clock
 	tx          TxRunner
 }
@@ -30,6 +30,7 @@ func NewCheckoutVisit(
 	visitRepo VisitRepository,
 	visitorRepo VisitorRepository,
 	gateRepo GateRepository,
+	rfidRepo RfidRepository,
 	clock Clock,
 	tx TxRunner,
 ) CheckoutVisitUsecase {
@@ -37,6 +38,7 @@ func NewCheckoutVisit(
 		visitRepo:   visitRepo,
 		visitorRepo: visitorRepo,
 		gateRepo:    gateRepo,
+		rfidRepo:    rfidRepo,
 		clock:       clock,
 		tx:          tx,
 	}
@@ -52,15 +54,16 @@ func (u *checkoutVisit) Execute(ctx context.Context, in CheckoutVisitInput) erro
 	gateID := in.GateID
 
 	return u.tx.Run(ctx, func(ctx context.Context) error {
-		visit, err := u.visitRepo.UpdateState(ctx, in.VisitID, position, ptrTime(now), &gateID)
+		visit, err := u.visitRepo.UpdateState(ctx, in.VisitID, position, new(now), &gateID)
 		if err != nil {
 			return err
 		}
 		if err := u.visitorRepo.ClearBan(ctx, visit.VisitorID); err != nil {
 			return err
 		}
+		if err := u.rfidRepo.ReleaseByVisit(ctx, in.VisitID); err != nil {
+			return err
+		}
 		return u.gateRepo.AdjustQuota(ctx, in.GateID, 1)
 	})
 }
-
-func ptrTime(t time.Time) *time.Time { return &t }

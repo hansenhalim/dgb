@@ -28,6 +28,10 @@ type RfidRepository interface {
 	// AssociateVisit re-points the RFID row at a visit (sets
 	// rfidable_type='App\Models\Visit', rfidable_id=visitID).
 	AssociateVisit(ctx context.Context, rfidID uint16, visitID uuid.UUID) error
+	// ReleaseByVisit nulls the rfidable pointer on whichever RFID row is
+	// currently associated with the visit, freeing the card for reuse. Called
+	// on checkout; the inverse of AssociateVisit.
+	ReleaseByVisit(ctx context.Context, visitID uuid.UUID) error
 }
 
 type GateRepository interface {

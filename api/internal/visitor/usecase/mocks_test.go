@@ -409,6 +409,63 @@ func (_c *MockRfidRepository_FindByUID_Call) RunAndReturn(run func(ctx context.C
 	return _c
 }
 
+// ReleaseByVisit provides a mock function for the type MockRfidRepository
+func (_mock *MockRfidRepository) ReleaseByVisit(ctx context.Context, visitID uuid.UUID) error {
+	ret := _mock.Called(ctx, visitID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReleaseByVisit")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, visitID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockRfidRepository_ReleaseByVisit_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReleaseByVisit'
+type MockRfidRepository_ReleaseByVisit_Call struct {
+	*mock.Call
+}
+
+// ReleaseByVisit is a helper method to define mock.On call
+//   - ctx context.Context
+//   - visitID uuid.UUID
+func (_e *MockRfidRepository_Expecter) ReleaseByVisit(ctx interface{}, visitID interface{}) *MockRfidRepository_ReleaseByVisit_Call {
+	return &MockRfidRepository_ReleaseByVisit_Call{Call: _e.mock.On("ReleaseByVisit", ctx, visitID)}
+}
+
+func (_c *MockRfidRepository_ReleaseByVisit_Call) Run(run func(ctx context.Context, visitID uuid.UUID)) *MockRfidRepository_ReleaseByVisit_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRfidRepository_ReleaseByVisit_Call) Return(err error) *MockRfidRepository_ReleaseByVisit_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockRfidRepository_ReleaseByVisit_Call) RunAndReturn(run func(ctx context.Context, visitID uuid.UUID) error) *MockRfidRepository_ReleaseByVisit_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockGateRepository creates a new instance of MockGateRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockGateRepository(t interface {

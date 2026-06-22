@@ -19,6 +19,7 @@ type checkoutVisitSUT struct {
 	visitRepo   *usecase.MockVisitRepository
 	visitorRepo *usecase.MockVisitorRepository
 	gateRepo    *usecase.MockGateRepository
+	rfidRepo    *usecase.MockRfidRepository
 	clock       *usecase.MockClock
 	tx          *usecase.MockTxRunner
 	uc          usecase.CheckoutVisitUsecase
@@ -29,15 +30,17 @@ func newCheckoutVisitSUT(t *testing.T) *checkoutVisitSUT {
 	visitRepo := usecase.NewMockVisitRepository(t)
 	visitorRepo := usecase.NewMockVisitorRepository(t)
 	gateRepo := usecase.NewMockGateRepository(t)
+	rfidRepo := usecase.NewMockRfidRepository(t)
 	clock := usecase.NewMockClock(t)
 	tx := usecase.NewMockTxRunner(t)
 	return &checkoutVisitSUT{
 		visitRepo:   visitRepo,
 		visitorRepo: visitorRepo,
 		gateRepo:    gateRepo,
+		rfidRepo:    rfidRepo,
 		clock:       clock,
 		tx:          tx,
-		uc:          usecase.NewCheckoutVisit(visitRepo, visitorRepo, gateRepo, clock, tx),
+		uc:          usecase.NewCheckoutVisit(visitRepo, visitorRepo, gateRepo, rfidRepo, clock, tx),
 	}
 }
 
@@ -65,6 +68,7 @@ func TestCheckoutVisit_Success(t *testing.T) {
 		mock.MatchedBy(func(g *int16) bool { return g != nil && *g == gateID }),
 	).Return(&entity.Visit{ID: visitID, VisitorID: visitorID, CurrentPosition: entity.CurrentPositionOutside, UpdatedAt: now}, nil).Once()
 	sut.visitorRepo.EXPECT().ClearBan(mock.Anything, visitorID).Return(nil).Once()
+	sut.rfidRepo.EXPECT().ReleaseByVisit(mock.Anything, visitID).Return(nil).Once()
 	sut.gateRepo.EXPECT().AdjustQuota(mock.Anything, gateID, int16(1)).Return(nil).Once()
 
 	err := sut.uc.Execute(context.Background(), usecase.CheckoutVisitInput{VisitID: visitID, GateID: gateID})
@@ -107,6 +111,25 @@ func TestCheckoutVisit_ClearBanError(t *testing.T) {
 	sut.visitRepo.EXPECT().UpdateState(mock.Anything, visitID, entity.CurrentPositionOutside, mock.Anything, mock.Anything).
 		Return(&entity.Visit{ID: visitID, VisitorID: visitorID}, nil).Once()
 	sut.visitorRepo.EXPECT().ClearBan(mock.Anything, visitorID).Return(dbErr).Once()
+
+	err := sut.uc.Execute(context.Background(), usecase.CheckoutVisitInput{VisitID: visitID, GateID: 3})
+
+	assert.ErrorIs(t, err, dbErr)
+}
+
+func TestCheckoutVisit_ReleaseRfidError(t *testing.T) {
+	sut := newCheckoutVisitSUT(t)
+	visitID := uuid.New()
+	visitorID := uuid.New()
+	now := time.Now().UTC()
+	dbErr := errors.New("release rfid failed")
+
+	sut.clock.EXPECT().Now().Return(now).Once()
+	sut.expectPassthroughTx()
+	sut.visitRepo.EXPECT().UpdateState(mock.Anything, visitID, entity.CurrentPositionOutside, mock.Anything, mock.Anything).
+		Return(&entity.Visit{ID: visitID, VisitorID: visitorID}, nil).Once()
+	sut.visitorRepo.EXPECT().ClearBan(mock.Anything, visitorID).Return(nil).Once()
+	sut.rfidRepo.EXPECT().ReleaseByVisit(mock.Anything, visitID).Return(dbErr).Once()
 
 	err := sut.uc.Execute(context.Background(), usecase.CheckoutVisitInput{VisitID: visitID, GateID: 3})
 

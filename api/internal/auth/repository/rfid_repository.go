@@ -72,6 +72,17 @@ func (r *RfidRepository) AssociateVisit(ctx context.Context, rfidID uint16, visi
 		}).Error
 }
 
+func (r *RfidRepository) ReleaseByVisit(ctx context.Context, visitID uuid.UUID) error {
+	return tx.DB(ctx, r.db).
+		Model(&rfid{}).
+		Where("rfidable_type = ?", laravelVisitType).
+		Where("rfidable_id = ?", visitID).
+		Updates(map[string]any{
+			"rfidable_type": nil,
+			"rfidable_id":   nil,
+		}).Error
+}
+
 func roleToDB(role entity.Role) string {
 	switch role {
 	case entity.RoleGuard:
