@@ -17,8 +17,7 @@ func Handler(c *echo.Context, err error) {
 		return
 	}
 
-	var apiErr *APIError
-	if errors.As(err, &apiErr) {
+	if apiErr, ok := errors.AsType[*APIError](err); ok {
 		_ = c.JSON(apiErr.Status, messageBody{Message: apiErr.Message})
 		return
 	}
@@ -37,8 +36,7 @@ func Handler(c *echo.Context, err error) {
 		return
 	}
 
-	var httpErr *echo.HTTPError
-	if errors.As(err, &httpErr) {
+	if httpErr, ok := errors.AsType[*echo.HTTPError](err); ok {
 		msg := httpErr.Message
 		if msg == "" {
 			msg = http.StatusText(httpErr.Code)
