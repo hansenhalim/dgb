@@ -95,10 +95,17 @@ async function ensurePhotoUnderLimit(uri: string): Promise<string> {
   const size = await getFileSize(uri);
   if (size <= PHOTO_BYTE_LIMIT) return uri;
   const rendered = await ImageManipulator.manipulate(uri).renderAsync();
-  const saved = await rendered.saveAsync({
-    format: SaveFormat.JPEG,
-    compress: PHOTO_FALLBACK_COMPRESS,
-  });
+  let saved;
+  try {
+    saved = await rendered.saveAsync({
+      format: SaveFormat.JPEG,
+      compress: PHOTO_FALLBACK_COMPRESS,
+    });
+  } finally {
+    // Release the native bitmap immediately — Hermes GC can't see its size and
+    // under-collects, leaking native memory across repeated visits.
+    rendered.release();
+  }
   const recompressedSize = await getFileSize(saved.uri);
   if (recompressedSize > PHOTO_BYTE_LIMIT) {
     throw new Error("Foto identitas terlalu besar (>512KB).");
@@ -259,10 +266,17 @@ export function useGuestFormViewModel(
         const rendered = await ImageManipulator.manipulate(rawPhotoUri)
           .rotate(90)
           .renderAsync();
-        const saved = await rendered.saveAsync({
-          format: SaveFormat.JPEG,
-          compress: 0.9,
-        });
+        let saved;
+        try {
+          saved = await rendered.saveAsync({
+            format: SaveFormat.JPEG,
+            compress: 0.9,
+          });
+        } finally {
+          // Release the native bitmap immediately — Hermes GC can't see its
+          // size and under-collects, leaking native memory across visits.
+          rendered.release();
+        }
         if (cancelled) return;
         setPhotoUri(saved.uri);
 
