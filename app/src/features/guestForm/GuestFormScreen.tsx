@@ -22,6 +22,8 @@ import { WarningTriangle } from "@/components/icons";
 import { useTheme } from "@/theme/theme";
 import { fonts, radius, type Colors } from "@/theme/tokens";
 
+import { FIELD_CAPS } from "@/domain/visitCard";
+
 import { TujuanAutocomplete } from "./TujuanAutocomplete";
 import {
   KEPERLUAN_OPTIONS,
@@ -149,6 +151,7 @@ export default function GuestFormScreen() {
                 style={[styles.input, vm.isProcessing && styles.inputDisabled]}
                 value={vm.nama}
                 onChangeText={(val) => vm.setNama(val.toUpperCase())}
+                maxLength={FIELD_CAPS.fullname}
                 autoCorrect={false}
                 placeholder={
                   vm.isProcessing ? "Memproses identitas…" : "JOHN DOE"
@@ -165,6 +168,7 @@ export default function GuestFormScreen() {
                 value={vm.plat}
                 onChangeText={vm.setPlat}
                 keyboardType="visible-password"
+                maxLength={FIELD_CAPS.plate}
                 autoCorrect={false}
                 placeholder="BE 1234 CD"
                 placeholderTextColor={colors.inkDim}
@@ -211,6 +215,7 @@ export default function GuestFormScreen() {
                   style={[styles.input, styles.otherInput]}
                   value={vm.keperluanOther}
                   onChangeText={vm.setKeperluanOther}
+                  maxLength={FIELD_CAPS.purposeCustom}
                   autoCorrect={false}
                   placeholder="Renang, Les, dll"
                   placeholderTextColor={colors.inkDim}
