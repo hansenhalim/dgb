@@ -98,12 +98,31 @@ export function maskFullname(name: string): string {
   });
 }
 
-const FIELD_CAPS = {
+export const FIELD_CAPS = {
   purposeCustom: 30,
   plate: 20,
   destination: 30,
   fullname: 60,
 } as const;
+
+export type CardTextField = keyof typeof FIELD_CAPS;
+
+/**
+ * Pre-flight check that a variable-length string will survive `encodeVisitCardV1`'s
+ * `writeVarAscii`: within the field cap and pure ASCII. Returns the reason it would
+ * be rejected, or null if it encodes cleanly. Use this BEFORE creating a visit so an
+ * unencodable value (e.g. an over-long OCR'd name) never produces an orphaned record.
+ */
+export function checkCardText(
+  value: string,
+  field: CardTextField,
+): "too_long" | "non_ascii" | null {
+  if (value.length > FIELD_CAPS[field]) return "too_long";
+  for (let i = 0; i < value.length; i++) {
+    if (value.charCodeAt(i) > 0x7f) return "non_ascii";
+  }
+  return null;
+}
 
 const HEADER = {
   version: 0,

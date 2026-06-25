@@ -6,9 +6,12 @@ import { useServices } from "@/config/container";
 import { useDestinations } from "@/config/destinations";
 import type { VisitorPreflight } from "@/domain/ports";
 import {
+  FIELD_CAPS,
   KEPERLUAN_LAINNYA_INDEX,
   KEPERLUAN_OPTIONS,
+  checkCardText,
   encodeVisitCardV1,
+  maskFullname,
   type Keperluan,
 } from "@/domain/visitCard";
 
@@ -64,6 +67,22 @@ const formatPlate = (raw: string) =>
     .toUpperCase()
     .replace(/([A-Z])(\d)/g, "$1 $2")
     .replace(/(\d)([A-Z])/g, "$1 $2");
+
+// Format, then clamp to the card's plate cap. The cap is on the no-space form
+// the card stores, so we truncate by significant (non-space) characters and
+// drop any trailing separator left behind.
+const clampPlate = (raw: string) => {
+  const formatted = formatPlate(raw);
+  let significant = 0;
+  let end = 0;
+  for (; end < formatted.length; end++) {
+    if (formatted[end] !== " ") {
+      if (significant === FIELD_CAPS.plate) break;
+      significant++;
+    }
+  }
+  return formatted.slice(0, end).trimEnd();
+};
 
 const sanitizeNik = (raw: string) => raw.replace(/\D/g, "").slice(0, 16);
 
@@ -129,11 +148,11 @@ export function useGuestFormViewModel(
   const [photoUri, setPhotoUri] = useState<string | undefined>(rawPhotoUri);
   const [isProcessing, setIsProcessing] = useState<boolean>(!!rawPhotoUri);
   const [nik, setNikRaw] = useState("");
-  const [nama, setNama] = useState("");
+  const [nama, setNamaRaw] = useState("");
   const [plat, setPlatRaw] = useState("");
   const [tujuan, setTujuan] = useState("");
   const [keperluan, setKeperluan] = useState<Keperluan | null>(null);
-  const [keperluanOther, setKeperluanOther] = useState("");
+  const [keperluanOther, setKeperluanOtherRaw] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preflightStatus, setPreflightStatus] =
@@ -153,9 +172,19 @@ export function useGuestFormViewModel(
       curr.length === 12 || curr.length === 14 ? curr.padStart(16, "0") : curr,
     );
   }, []);
+  // All text fields are clamped to their card-encoding caps at the point of
+  // entry — not just by the input's maxLength, which only governs typing.
+  // Server-authoritative prefill and OCR write these setters directly, so an
+  // over-long stored/misread value gets trimmed here rather than blocking save.
+  const setNama = useCallback((v: string) => {
+    setNamaRaw(v.slice(0, FIELD_CAPS.fullname));
+  }, []);
+  const setKeperluanOther = useCallback((v: string) => {
+    setKeperluanOtherRaw(v.slice(0, FIELD_CAPS.purposeCustom));
+  }, []);
   const setPlat = useCallback((v: string) => {
     setError(null);
-    setPlatRaw(formatPlate(v));
+    setPlatRaw(clampPlate(v));
   }, []);
 
   const triedLazyFetchRef = useRef(false);
@@ -219,7 +248,7 @@ export function useGuestFormViewModel(
           // purpose may differ from history, so don't clobber what's there.
           if (last.vehiclePlateNumber) {
             setPlatRaw((curr) =>
-              curr === "" ? formatPlate(last.vehiclePlateNumber) : curr,
+              curr === "" ? clampPlate(last.vehiclePlateNumber) : curr,
             );
           }
           if (last.destinationName) {
@@ -237,7 +266,11 @@ export function useGuestFormViewModel(
               return isFixed ? (purpose as Keperluan) : "Lainnya";
             });
             if (!isFixed) {
-              setKeperluanOther((curr) => (curr === "" ? purpose : curr));
+              setKeperluanOtherRaw((curr) =>
+                curr === ""
+                  ? purpose.slice(0, FIELD_CAPS.purposeCustom)
+                  : curr,
+              );
             }
           }
         })
@@ -307,6 +340,21 @@ export function useGuestFormViewModel(
   const tujuanValid =
     !!destinations && destinations.some((d) => d.name === tujuan);
 
+  // Every variable field must fit the card encoding (cap + ASCII). A returning
+  // visitor's server-stored fullname can be an over-long OCR misread (e.g. KTP
+  // label text); without this gate it satisfies "non-empty" and the visit is
+  // created before encodeVisitCardV1 throws — orphaning a record. See
+  // checkCardText / FIELD_CAPS in domain/visitCard.
+  const namaTrimmed = nama.trim();
+  const cardFieldsFit =
+    checkCardText(maskFullname(namaTrimmed), "fullname") === null &&
+    checkCardText(plat.replace(/\s+/g, ""), "plate") === null &&
+    checkCardText(tujuan, "destination") === null &&
+    checkCardText(
+      keperluan === "Lainnya" ? keperluanOther.trim() : "",
+      "purposeCustom",
+    ) === null;
+
   const canSave =
     !saving &&
     !isProcessing &&
@@ -316,9 +364,10 @@ export function useGuestFormViewModel(
     !!activeGate &&
     activeGate.id !== 4 &&
     nik.length === 16 &&
-    nama.trim().length > 0 &&
+    namaTrimmed.length > 0 &&
     tujuanValid &&
-    keperluanComplete;
+    keperluanComplete &&
+    cardFieldsFit;
 
   const save = useCallback(async (): Promise<SaveResult | null> => {
     if (!canSave || !keperluan || !photoUri || !uid || !rfidKey || !activeGate)
@@ -364,18 +413,26 @@ export function useGuestFormViewModel(
       }
 
       const purposeEnum = KEPERLUAN_OPTIONS.indexOf(keperluan);
-      const cardPayloadHex = encodeVisitCardV1({
-        visitId,
-        identityNumber: paddedNik,
-        purposeEnum,
-        purposeCustom:
-          purposeEnum === KEPERLUAN_LAINNYA_INDEX ? keperluanOther.trim() : "",
-        plate: plateNoSpaces,
-        destination: tujuan,
-        fullname: nama.trim(),
-        currentArea,
-        updatedAt,
-      });
+      let cardPayloadHex: string;
+      try {
+        cardPayloadHex = encodeVisitCardV1({
+          visitId,
+          identityNumber: paddedNik,
+          purposeEnum,
+          purposeCustom:
+            purposeEnum === KEPERLUAN_LAINNYA_INDEX ? keperluanOther.trim() : "",
+          plate: plateNoSpaces,
+          destination: tujuan,
+          fullname: nama.trim(),
+          currentArea,
+          updatedAt,
+        });
+      } catch (e) {
+        // The visit was already created server-side; surface the failure rather
+        // than throwing out of save() (an unhandled rejection with no UI).
+        setError(e instanceof Error ? e.message : "Gagal membuat data kartu.");
+        return null;
+      }
 
       let cardWritten = false;
       try {
