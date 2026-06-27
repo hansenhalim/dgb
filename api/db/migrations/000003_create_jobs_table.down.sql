@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS failed_jobs;
+DROP TABLE IF EXISTS job_batches;
+DROP TABLE IF EXISTS jobs;

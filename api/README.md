@@ -7,8 +7,8 @@ Go (Echo + GORM) backend for the DGB gate-management system. Replaces the legacy
 ### Prerequisites
 
 - Go 1.26+
-- PostgreSQL 14+ (a running instance reachable at `DB_HOST:DB_PORT`)
-- The schema from the legacy Laravel app — this service does not run migrations; it expects the existing `dgb` database to already be provisioned.
+- PostgreSQL 18+ (a running instance reachable at `DB_HOST:DB_PORT`; the migrations use `uuidv7()`, which requires PG18)
+- A reachable `dgb` database — on startup the service automatically applies the embedded migrations in `db/migrations/` (golang-migrate), replicating the legacy Laravel `php artisan migrate --force`. Migrations are idempotent, so running against an already-provisioned database is safe.
 
 ### Setup
 

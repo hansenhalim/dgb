@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS visits (
+    id                   uuid         NOT NULL DEFAULT uuidv7(),
+    visitor_id           uuid         NULL,
+    identity_photo       bytea        NULL,
+    vehicle_plate_number varchar(20)  NULL,
+    purpose_of_visit     varchar(255) NULL,
+    destination_name     varchar(30)  NULL,
+    checkin_at           timestamp(0) WITHOUT TIME ZONE NULL,
+    checkin_gate_id      smallint     NULL,
+    checkout_at          timestamp(0) WITHOUT TIME ZONE NULL,
+    checkout_gate_id     smallint     NULL,
+    current_position     varchar(255) NOT NULL,
+    created_at           timestamp(0) WITHOUT TIME ZONE NULL,
+    updated_at           timestamp(0) WITHOUT TIME ZONE NULL,
+    CONSTRAINT visits_pkey PRIMARY KEY (id),
+    CONSTRAINT visits_current_position_check CHECK (current_position IN ('OUT', 'VIL_1', 'VIL_2', 'VIL_E', 'TRNST')),
+    CONSTRAINT visits_visitor_id_foreign FOREIGN KEY (visitor_id) REFERENCES visitors (id),
+    CONSTRAINT visits_destination_name_foreign FOREIGN KEY (destination_name) REFERENCES destinations (name),
+    CONSTRAINT visits_checkin_gate_id_foreign FOREIGN KEY (checkin_gate_id) REFERENCES gates (id),
+    CONSTRAINT visits_checkout_gate_id_foreign FOREIGN KEY (checkout_gate_id) REFERENCES gates (id)
+);
