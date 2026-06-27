@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS cache_locks;
+DROP TABLE IF EXISTS cache;

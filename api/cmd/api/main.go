@@ -9,6 +9,7 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
 
+	migrationfs "github.com/hansenhalim/dgb/api/db"
 	authcontroller "github.com/hansenhalim/dgb/api/internal/auth/controller"
 	authrepository "github.com/hansenhalim/dgb/api/internal/auth/repository"
 	authusecase "github.com/hansenhalim/dgb/api/internal/auth/usecase"
@@ -59,6 +60,17 @@ func main() {
 		logger.Error("connect postgres", "err", err)
 		os.Exit(1)
 	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		logger.Error("get sql.DB", "err", err)
+		os.Exit(1)
+	}
+	if err := database.Migrate(sqlDB, migrationfs.MigrationsFS); err != nil {
+		logger.Error("run migrations", "err", err)
+		os.Exit(1)
+	}
+	logger.Info("migrations applied")
 
 	bcrypt := hasher.NewBcrypt()
 	sha256 := digester.NewSHA256()
