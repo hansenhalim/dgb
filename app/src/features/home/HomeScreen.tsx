@@ -125,7 +125,7 @@ export default function HomeScreen() {
       >
         <View style={styles.statRow}>
           <Pressable
-            style={[styles.stat, vm.lowStock && styles.statAlert]}
+            style={styles.stat}
             onPress={() => router.push("/transfer-request")}
           >
             <View style={styles.statChev}>
@@ -136,9 +136,7 @@ export default function HomeScreen() {
               <Text style={styles.statKey}>KARTU RFID</Text>
             </View>
             <View style={styles.statBigRow}>
-              <Text
-                style={[styles.statBig, vm.lowStock && styles.statBigAlert]}
-              >
+              <Text style={styles.statBig}>
                 {vm.cardStock?.available ?? "—"}
               </Text>
               <Text style={styles.statBigOf}>/{vm.cardStock?.total ?? "—"}</Text>
@@ -170,18 +168,6 @@ export default function HomeScreen() {
               <Text style={styles.bannerTitle}>BATERAI READER MENIPIS</Text>
               <Text style={styles.bannerText}>
                 Siapkan baterai cadangan. Matikan reader untuk mengganti baterai.
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {vm.lowStock ? (
-          <View style={styles.banner}>
-            <WarningTriangle size={20} color={colors.red} />
-            <View style={styles.bannerBody}>
-              <Text style={styles.bannerTitle}>STOK KARTU RFID MENIPIS</Text>
-              <Text style={styles.bannerText}>
-                Minta transfer dari pos gerbang terdekat.
               </Text>
             </View>
           </View>
@@ -369,12 +355,6 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     color: colors.ink,
     letterSpacing: -0.6,
     lineHeight: 36,
-  },
-  statBigAlert: {
-    color: colors.red,
-  },
-  statAlert: {
-    borderColor: "rgba(185,28,28,0.40)",
   },
   statDisabled: {
     opacity: 0.5,

@@ -17,13 +17,10 @@ export type HomeViewModel = {
   gates: Gate[] | null;
   cardStock: CardStock | null;
   visits: VisitSummary | null;
-  lowStock: boolean;
   hasIncomingTransferRequest: boolean;
   reload: () => Promise<void>;
   selectGate: (gateId: number) => Promise<void>;
 };
-
-const LOW_STOCK_THRESHOLD = 0.2;
 
 export function useHomeViewModel(): HomeViewModel {
   const { session } = useServices();
@@ -81,9 +78,6 @@ export function useHomeViewModel(): HomeViewModel {
     }, [load]),
   );
 
-  const lowStock =
-    cardStock !== null && cardStock.available / cardStock.total < LOW_STOCK_THRESHOLD;
-
   return {
     loading,
     refreshing,
@@ -92,7 +86,6 @@ export function useHomeViewModel(): HomeViewModel {
     gates,
     cardStock,
     visits,
-    lowStock,
     hasIncomingTransferRequest,
     reload,
     selectGate,
