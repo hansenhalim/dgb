@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 
@@ -53,7 +54,7 @@ func (u *checkoutVisit) Execute(ctx context.Context, in CheckoutVisitInput) erro
 	now := u.clock.Now().UTC()
 	gateID := in.GateID
 
-	return u.tx.Run(ctx, func(ctx context.Context) error {
+	err := u.tx.Run(ctx, func(ctx context.Context) error {
 		visit, err := u.visitRepo.UpdateState(ctx, in.VisitID, position, new(now), &gateID)
 		if err != nil {
 			return err
@@ -66,4 +67,12 @@ func (u *checkoutVisit) Execute(ctx context.Context, in CheckoutVisitInput) erro
 		}
 		return u.gateRepo.AdjustQuota(ctx, in.GateID, 1)
 	})
+	if errors.Is(err, entity.ErrVisitNotFound) {
+		// Visit rows arrive eventually (state also rides on the RFID card), so a
+		// missing row must not block the gate. The tx has rolled back, so none of
+		// the side effects (ban clear, RFID release, quota bump) ran — they are
+		// all keyed to state this DB doesn't have yet.
+		return nil
+	}
+	return err
 }

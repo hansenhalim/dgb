@@ -84,7 +84,11 @@ func TestCheckoutVisit_UnknownGate(t *testing.T) {
 	assert.ErrorIs(t, err, entity.ErrInvalidVisitInput)
 }
 
-func TestCheckoutVisit_VisitNotFound(t *testing.T) {
+// A visit missing from the DB (not yet synced) must not block the gate: the
+// usecase reports success. The tx aborts on ErrVisitNotFound, so none of the
+// checkout side effects (ban clear, RFID release, quota bump) run — the mocks
+// would fail the test on any unexpected call.
+func TestCheckoutVisit_VisitNotFoundReportsSuccess(t *testing.T) {
 	sut := newCheckoutVisitSUT(t)
 	visitID := uuid.New()
 	now := time.Now().UTC()
@@ -96,7 +100,7 @@ func TestCheckoutVisit_VisitNotFound(t *testing.T) {
 
 	err := sut.uc.Execute(context.Background(), usecase.CheckoutVisitInput{VisitID: visitID, GateID: 1})
 
-	assert.ErrorIs(t, err, entity.ErrVisitNotFound)
+	require.NoError(t, err)
 }
 
 func TestCheckoutVisit_ClearBanError(t *testing.T) {

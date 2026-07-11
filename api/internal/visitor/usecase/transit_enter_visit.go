@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,10 +26,11 @@ type TransitEnterVisitUsecase interface {
 
 type transitEnterVisit struct {
 	visitRepo VisitRepository
+	clock     Clock
 }
 
-func NewTransitEnterVisit(visitRepo VisitRepository) TransitEnterVisitUsecase {
-	return &transitEnterVisit{visitRepo: visitRepo}
+func NewTransitEnterVisit(visitRepo VisitRepository, clock Clock) TransitEnterVisitUsecase {
+	return &transitEnterVisit{visitRepo: visitRepo, clock: clock}
 }
 
 func (u *transitEnterVisit) Execute(ctx context.Context, in TransitEnterVisitInput) (*TransitEnterVisitOutput, error) {
@@ -38,6 +40,15 @@ func (u *transitEnterVisit) Execute(ctx context.Context, in TransitEnterVisitInp
 	}
 
 	visit, err := u.visitRepo.UpdateState(ctx, in.VisitID, position, nil, nil)
+	if errors.Is(err, entity.ErrVisitNotFound) {
+		// Visit rows arrive eventually (state also rides on the RFID card), so a
+		// missing row must not block the gate: report success with the position
+		// this update would have written. The transition itself is dropped.
+		return &TransitEnterVisitOutput{
+			CurrentArea: position,
+			UpdatedAt:   u.clock.Now().UTC(),
+		}, nil
+	}
 	if err != nil {
 		return nil, err
 	}

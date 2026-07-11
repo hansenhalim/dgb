@@ -290,15 +290,14 @@ func bindVisitStateRequest(ctx *echo.Context) (uuid.UUID, int16, error) {
 	return visitID, req.GateID, nil
 }
 
+// mapStateChangeError never sees entity.ErrVisitNotFound: the state-change
+// usecases swallow it and report success, because visit rows are eventually
+// consistent and a gate must not block on a row that hasn't synced yet.
 func mapStateChangeError(err error) error {
-	switch {
-	case errors.Is(err, entity.ErrVisitNotFound):
-		return httperror.New(http.StatusNotFound, "Visit not found.")
-	case errors.Is(err, entity.ErrInvalidVisitInput):
+	if errors.Is(err, entity.ErrInvalidVisitInput) {
 		return httperror.New(http.StatusBadRequest, "Invalid request data.")
-	default:
-		return err
 	}
+	return err
 }
 
 func currentAreaWire(p entity.CurrentPosition) string {

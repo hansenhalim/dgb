@@ -16,15 +16,18 @@ import (
 
 type transitEnterVisitSUT struct {
 	visitRepo *usecase.MockVisitRepository
+	clock     *usecase.MockClock
 	uc        usecase.TransitEnterVisitUsecase
 }
 
 func newTransitEnterVisitSUT(t *testing.T) *transitEnterVisitSUT {
 	t.Helper()
 	visitRepo := usecase.NewMockVisitRepository(t)
+	clock := usecase.NewMockClock(t)
 	return &transitEnterVisitSUT{
 		visitRepo: visitRepo,
-		uc:        usecase.NewTransitEnterVisit(visitRepo),
+		clock:     clock,
+		uc:        usecase.NewTransitEnterVisit(visitRepo, clock),
 	}
 }
 
@@ -79,15 +82,21 @@ func TestTransitEnterVisit_UnknownGate(t *testing.T) {
 	assert.Nil(t, out)
 }
 
-func TestTransitEnterVisit_VisitNotFound(t *testing.T) {
+// A visit missing from the DB (not yet synced) must not block the gate: the
+// usecase reports success with the position it would have written.
+func TestTransitEnterVisit_VisitNotFoundReportsSuccess(t *testing.T) {
 	sut := newTransitEnterVisitSUT(t)
 	visitID := uuid.New()
+	now := time.Date(2026, 7, 12, 8, 0, 0, 0, time.UTC)
 
 	sut.visitRepo.EXPECT().UpdateState(mock.Anything, visitID, entity.CurrentPositionVilla1, (*time.Time)(nil), (*int16)(nil)).
 		Return(nil, entity.ErrVisitNotFound).Once()
+	sut.clock.EXPECT().Now().Return(now).Once()
 
 	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: visitID, GateID: 2})
 
-	assert.ErrorIs(t, err, entity.ErrVisitNotFound)
-	assert.Nil(t, out)
+	require.NoError(t, err)
+	require.NotNil(t, out)
+	assert.Equal(t, entity.CurrentPositionVilla1, out.CurrentArea)
+	assert.Equal(t, now, out.UpdatedAt)
 }
