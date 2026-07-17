@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -42,14 +41,15 @@ func (r *VisitRepository) FindLatestByVisitor(ctx context.Context, visitorID uui
 	}, nil
 }
 
-// ListByGate returns up to 50 visits where either checkin_gate_id or
-// checkout_gate_id matches gateID. On-site visits (current_position != OUT) are
-// ordered ahead of checked-out (OUT) ones, then by created_at DESC, so the LIMIT
-// only ever trims the OUT tail — every on-site visit survives regardless of age.
-// Only the columns used by the history endpoint are projected. The usecase
-// applies the final fine-grained position ordering.
+// ListByGate returns up to 50 visits (from the visit_states view) where either
+// checkin_gate_id or checkout_gate_id matches gateID. On-site visits
+// (current_position != OUT) are ordered ahead of checked-out (OUT) ones, then
+// by created_at DESC, so the LIMIT only ever trims the OUT tail — every
+// on-site visit survives regardless of age. Only the columns used by the
+// history endpoint are projected. The usecase applies the final fine-grained
+// position ordering.
 func (r *VisitRepository) ListByGate(ctx context.Context, gateID int16) ([]entity.Visit, error) {
-	var rows []visit
+	var rows []visitState
 	err := tx.DB(ctx, r.db).
 		Select("id", "vehicle_plate_number", "current_position", "destination_name", "created_at").
 		Where("checkin_gate_id = ? OR checkout_gate_id = ?", gateID, gateID).
@@ -74,6 +74,8 @@ func (r *VisitRepository) ListByGate(ctx context.Context, gateID int16) ([]entit
 	return out, nil
 }
 
+// FindByID reads the visits base table (no derived state). Returns
+// entity.ErrVisitNotFound when no row matches id.
 func (r *VisitRepository) FindByID(ctx context.Context, id uuid.UUID) (*entity.Visit, error) {
 	var row visit
 	err := tx.DB(ctx, r.db).Where("id = ?", id).First(&row).Error
@@ -83,7 +85,16 @@ func (r *VisitRepository) FindByID(ctx context.Context, id uuid.UUID) (*entity.V
 	if err != nil {
 		return nil, err
 	}
-	return toEntity(&row), nil
+	return &entity.Visit{
+		ID:                 row.ID,
+		VisitorID:          row.VisitorID,
+		IdentityPhoto:      row.IdentityPhoto,
+		VehiclePlateNumber: row.VehiclePlateNumber,
+		PurposeOfVisit:     row.PurposeOfVisit,
+		DestinationName:    row.DestinationName,
+		CreatedAt:          row.CreatedAt,
+		UpdatedAt:          row.UpdatedAt,
+	}, nil
 }
 
 func (r *VisitRepository) Create(ctx context.Context, v *entity.Visit) error {
@@ -93,11 +104,6 @@ func (r *VisitRepository) Create(ctx context.Context, v *entity.Visit) error {
 		VehiclePlateNumber: v.VehiclePlateNumber,
 		PurposeOfVisit:     v.PurposeOfVisit,
 		DestinationName:    v.DestinationName,
-		CurrentPosition:    positionToDB(v.CurrentPosition),
-		CheckinAt:          v.CheckinAt,
-		CheckinGateID:      v.CheckinGateID,
-		CheckoutAt:         v.CheckoutAt,
-		CheckoutGateID:     v.CheckoutGateID,
 	}
 	if err := tx.DB(ctx, r.db).Create(&row).Error; err != nil {
 		return err
@@ -106,59 +112,6 @@ func (r *VisitRepository) Create(ctx context.Context, v *entity.Visit) error {
 	v.CreatedAt = row.CreatedAt
 	v.UpdatedAt = row.UpdatedAt
 	return nil
-}
-
-// UpdateState writes the new current_position and (when non-nil) checkout
-// columns, then re-reads the row to return the fresh updated_at. Returns
-// entity.ErrVisitNotFound when no row matches id.
-func (r *VisitRepository) UpdateState(ctx context.Context, id uuid.UUID, pos entity.CurrentPosition, checkoutAt *time.Time, checkoutGateID *int16) (*entity.Visit, error) {
-	updates := map[string]any{
-		"current_position": positionToDB(pos),
-	}
-	if checkoutAt != nil {
-		updates["checkout_at"] = checkoutAt
-	}
-	if checkoutGateID != nil {
-		updates["checkout_gate_id"] = checkoutGateID
-	}
-
-	result := tx.DB(ctx, r.db).
-		Model(&visit{}).
-		Where("id = ?", id).
-		Updates(updates)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return nil, entity.ErrVisitNotFound
-	}
-
-	var row visit
-	if err := tx.DB(ctx, r.db).
-		Select("id", "visitor_id", "current_position", "updated_at").
-		Where("id = ?", id).
-		First(&row).Error; err != nil {
-		return nil, err
-	}
-	return toEntity(&row), nil
-}
-
-func toEntity(row *visit) *entity.Visit {
-	return &entity.Visit{
-		ID:                 row.ID,
-		VisitorID:          row.VisitorID,
-		IdentityPhoto:      row.IdentityPhoto,
-		VehiclePlateNumber: row.VehiclePlateNumber,
-		PurposeOfVisit:     row.PurposeOfVisit,
-		DestinationName:    row.DestinationName,
-		CurrentPosition:    positionFromDB(row.CurrentPosition),
-		CheckinAt:          row.CheckinAt,
-		CheckinGateID:      row.CheckinGateID,
-		CheckoutAt:         row.CheckoutAt,
-		CheckoutGateID:     row.CheckoutGateID,
-		CreatedAt:          row.CreatedAt,
-		UpdatedAt:          row.UpdatedAt,
-	}
 }
 
 func positionToDB(p entity.CurrentPosition) string {

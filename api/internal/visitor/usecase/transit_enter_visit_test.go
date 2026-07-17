@@ -2,6 +2,7 @@ package usecase_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -15,46 +16,62 @@ import (
 )
 
 type transitEnterVisitSUT struct {
-	visitRepo *usecase.MockVisitRepository
+	eventRepo *usecase.MockVisitEventRepository
 	clock     *usecase.MockClock
 	uc        usecase.TransitEnterVisitUsecase
 }
 
 func newTransitEnterVisitSUT(t *testing.T) *transitEnterVisitSUT {
 	t.Helper()
-	visitRepo := usecase.NewMockVisitRepository(t)
+	eventRepo := usecase.NewMockVisitEventRepository(t)
 	clock := usecase.NewMockClock(t)
 	return &transitEnterVisitSUT{
-		visitRepo: visitRepo,
+		eventRepo: eventRepo,
 		clock:     clock,
-		uc:        usecase.NewTransitEnterVisit(visitRepo, clock),
+		uc:        usecase.NewTransitEnterVisit(eventRepo, clock),
 	}
+}
+
+func matchTransitEnterEvent(visitID, staffID uuid.UUID, gateID int16, pos entity.CurrentPosition, at time.Time) any {
+	return mock.MatchedBy(func(e *entity.VisitEvent) bool {
+		return e.VisitID == visitID &&
+			e.StaffID != nil && *e.StaffID == staffID &&
+			e.GateID == gateID &&
+			e.Action == entity.VisitActionTransitEnter &&
+			e.CurrentPosition == pos &&
+			e.CreatedAt.Equal(at)
+	})
 }
 
 func TestTransitEnterVisit_Gate2LandsVilla1(t *testing.T) {
 	sut := newTransitEnterVisitSUT(t)
 	visitID := uuid.New()
-	updatedAt := time.Date(2026, 5, 19, 10, 30, 0, 0, time.UTC)
+	staffID := uuid.New()
+	now := time.Date(2026, 5, 19, 10, 30, 0, 0, time.UTC)
 
-	sut.visitRepo.EXPECT().UpdateState(mock.Anything, visitID, entity.CurrentPositionVilla1, (*time.Time)(nil), (*int16)(nil)).
-		Return(&entity.Visit{ID: visitID, CurrentPosition: entity.CurrentPositionVilla1, UpdatedAt: updatedAt}, nil).Once()
+	sut.clock.EXPECT().Now().Return(now).Once()
+	sut.eventRepo.EXPECT().Append(mock.Anything, matchTransitEnterEvent(visitID, staffID, 2, entity.CurrentPositionVilla1, now)).
+		Return(nil).Once()
 
-	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: visitID, GateID: 2})
+	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: visitID, StaffID: staffID, GateID: 2})
 
 	require.NoError(t, err)
 	require.NotNil(t, out)
 	assert.Equal(t, entity.CurrentPositionVilla1, out.CurrentArea)
-	assert.Equal(t, updatedAt, out.UpdatedAt)
+	assert.Equal(t, now, out.UpdatedAt)
 }
 
 func TestTransitEnterVisit_Gate3LandsVilla2(t *testing.T) {
 	sut := newTransitEnterVisitSUT(t)
 	visitID := uuid.New()
+	staffID := uuid.New()
+	now := time.Now().UTC()
 
-	sut.visitRepo.EXPECT().UpdateState(mock.Anything, visitID, entity.CurrentPositionVilla2, (*time.Time)(nil), (*int16)(nil)).
-		Return(&entity.Visit{ID: visitID, CurrentPosition: entity.CurrentPositionVilla2}, nil).Once()
+	sut.clock.EXPECT().Now().Return(now).Once()
+	sut.eventRepo.EXPECT().Append(mock.Anything, matchTransitEnterEvent(visitID, staffID, 3, entity.CurrentPositionVilla2, now)).
+		Return(nil).Once()
 
-	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: visitID, GateID: 3})
+	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: visitID, StaffID: staffID, GateID: 3})
 
 	require.NoError(t, err)
 	assert.Equal(t, entity.CurrentPositionVilla2, out.CurrentArea)
@@ -63,11 +80,14 @@ func TestTransitEnterVisit_Gate3LandsVilla2(t *testing.T) {
 func TestTransitEnterVisit_Gate4LandsExclusive(t *testing.T) {
 	sut := newTransitEnterVisitSUT(t)
 	visitID := uuid.New()
+	staffID := uuid.New()
+	now := time.Now().UTC()
 
-	sut.visitRepo.EXPECT().UpdateState(mock.Anything, visitID, entity.CurrentPositionExclusive, (*time.Time)(nil), (*int16)(nil)).
-		Return(&entity.Visit{ID: visitID, CurrentPosition: entity.CurrentPositionExclusive}, nil).Once()
+	sut.clock.EXPECT().Now().Return(now).Once()
+	sut.eventRepo.EXPECT().Append(mock.Anything, matchTransitEnterEvent(visitID, staffID, 4, entity.CurrentPositionExclusive, now)).
+		Return(nil).Once()
 
-	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: visitID, GateID: 4})
+	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: visitID, StaffID: staffID, GateID: 4})
 
 	require.NoError(t, err)
 	assert.Equal(t, entity.CurrentPositionExclusive, out.CurrentArea)
@@ -76,27 +96,22 @@ func TestTransitEnterVisit_Gate4LandsExclusive(t *testing.T) {
 func TestTransitEnterVisit_UnknownGate(t *testing.T) {
 	sut := newTransitEnterVisitSUT(t)
 
-	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: uuid.New(), GateID: 1})
+	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: uuid.New(), StaffID: uuid.New(), GateID: 1})
 
 	assert.ErrorIs(t, err, entity.ErrInvalidVisitInput)
 	assert.Nil(t, out)
 }
 
-// A visit missing from the DB (not yet synced) must not block the gate: the
-// usecase reports success with the position it would have written.
-func TestTransitEnterVisit_VisitNotFoundReportsSuccess(t *testing.T) {
+func TestTransitEnterVisit_AppendError(t *testing.T) {
 	sut := newTransitEnterVisitSUT(t)
-	visitID := uuid.New()
-	now := time.Date(2026, 7, 12, 8, 0, 0, 0, time.UTC)
+	now := time.Now().UTC()
+	dbErr := errors.New("append failed")
 
-	sut.visitRepo.EXPECT().UpdateState(mock.Anything, visitID, entity.CurrentPositionVilla1, (*time.Time)(nil), (*int16)(nil)).
-		Return(nil, entity.ErrVisitNotFound).Once()
 	sut.clock.EXPECT().Now().Return(now).Once()
+	sut.eventRepo.EXPECT().Append(mock.Anything, mock.Anything).Return(dbErr).Once()
 
-	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: visitID, GateID: 2})
+	out, err := sut.uc.Execute(context.Background(), usecase.TransitEnterVisitInput{VisitID: uuid.New(), StaffID: uuid.New(), GateID: 2})
 
-	require.NoError(t, err)
-	require.NotNil(t, out)
-	assert.Equal(t, entity.CurrentPositionVilla1, out.CurrentArea)
-	assert.Equal(t, now, out.UpdatedAt)
+	assert.ErrorIs(t, err, dbErr)
+	assert.Nil(t, out)
 }

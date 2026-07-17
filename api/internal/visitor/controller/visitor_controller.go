@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"github.com/hansenhalim/dgb/api/internal/entity"
+	"github.com/hansenhalim/dgb/api/internal/shared/authctx"
 	"github.com/hansenhalim/dgb/api/internal/shared/httperror"
 	"github.com/hansenhalim/dgb/api/internal/visitor/usecase"
 )
@@ -128,6 +129,11 @@ func (c *VisitorController) CreateVisit(ctx *echo.Context) error {
 		return httperror.New(http.StatusBadRequest, badInput)
 	}
 
+	staffID, err := authctx.StaffID(ctx)
+	if err != nil {
+		return httperror.New(http.StatusUnauthorized, "Invalid token.")
+	}
+
 	fileHeader, err := ctx.FormFile("identity_photo")
 	if err != nil || fileHeader == nil {
 		return httperror.New(http.StatusBadRequest, badInput)
@@ -156,6 +162,7 @@ func (c *VisitorController) CreateVisit(ctx *echo.Context) error {
 		VehiclePlateNumber: vehiclePlate,
 		PurposeOfVisit:     purposeOfVisit,
 		DestinationName:    destinationName,
+		StaffID:            staffID,
 		GateID:             int16(gateID64),
 	})
 	if err != nil {
@@ -180,13 +187,14 @@ func (c *VisitorController) CreateVisit(ctx *echo.Context) error {
 }
 
 func (c *VisitorController) Checkout(ctx *echo.Context) error {
-	visitID, gateID, err := bindVisitStateRequest(ctx)
+	visitID, staffID, gateID, err := bindVisitStateRequest(ctx)
 	if err != nil {
 		return err
 	}
 
 	err = c.checkout.Execute(ctx.Request().Context(), usecase.CheckoutVisitInput{
 		VisitID: visitID,
+		StaffID: staffID,
 		GateID:  gateID,
 	})
 	if err != nil {
@@ -197,13 +205,14 @@ func (c *VisitorController) Checkout(ctx *echo.Context) error {
 }
 
 func (c *VisitorController) Transit(ctx *echo.Context) error {
-	visitID, gateID, err := bindVisitStateRequest(ctx)
+	visitID, staffID, gateID, err := bindVisitStateRequest(ctx)
 	if err != nil {
 		return err
 	}
 
 	out, err := c.transit.Execute(ctx.Request().Context(), usecase.TransitVisitInput{
 		VisitID: visitID,
+		StaffID: staffID,
 		GateID:  gateID,
 	})
 	if err != nil {
@@ -251,13 +260,14 @@ func (c *VisitorController) GetHistory(ctx *echo.Context) error {
 }
 
 func (c *VisitorController) TransitEnter(ctx *echo.Context) error {
-	visitID, gateID, err := bindVisitStateRequest(ctx)
+	visitID, staffID, gateID, err := bindVisitStateRequest(ctx)
 	if err != nil {
 		return err
 	}
 
 	out, err := c.transitEnter.Execute(ctx.Request().Context(), usecase.TransitEnterVisitInput{
 		VisitID: visitID,
+		StaffID: staffID,
 		GateID:  gateID,
 	})
 	if err != nil {
@@ -273,26 +283,32 @@ func (c *VisitorController) TransitEnter(ctx *echo.Context) error {
 	})
 }
 
-func bindVisitStateRequest(ctx *echo.Context) (uuid.UUID, int16, error) {
-	visitID, err := uuid.Parse(ctx.Param("id"))
+func bindVisitStateRequest(ctx *echo.Context) (visitID, staffID uuid.UUID, gateID int16, err error) {
+	visitID, err = uuid.Parse(ctx.Param("id"))
 	if err != nil {
-		return uuid.Nil, 0, httperror.New(http.StatusBadRequest, "Invalid request data.")
+		return uuid.Nil, uuid.Nil, 0, httperror.New(http.StatusBadRequest, "Invalid request data.")
+	}
+
+	staffID, err = authctx.StaffID(ctx)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, 0, httperror.New(http.StatusUnauthorized, "Invalid token.")
 	}
 
 	var req gateOnlyRequest
 	if err := ctx.Bind(&req); err != nil {
-		return uuid.Nil, 0, httperror.New(http.StatusBadRequest, "Invalid request data.")
+		return uuid.Nil, uuid.Nil, 0, httperror.New(http.StatusBadRequest, "Invalid request data.")
 	}
 	if err := ctx.Validate(&req); err != nil {
-		return uuid.Nil, 0, httperror.New(http.StatusBadRequest, "Invalid request data.")
+		return uuid.Nil, uuid.Nil, 0, httperror.New(http.StatusBadRequest, "Invalid request data.")
 	}
 
-	return visitID, req.GateID, nil
+	return visitID, staffID, req.GateID, nil
 }
 
-// mapStateChangeError never sees entity.ErrVisitNotFound: the state-change
-// usecases swallow it and report success, because visit rows are eventually
-// consistent and a gate must not block on a row that hasn't synced yet.
+// mapStateChangeError never sees entity.ErrVisitNotFound: state changes append
+// to the event log without requiring the visit row, because visit rows are
+// eventually consistent and a gate must not block on a row that hasn't synced
+// yet.
 func mapStateChangeError(err error) error {
 	if errors.Is(err, entity.ErrInvalidVisitInput) {
 		return httperror.New(http.StatusBadRequest, "Invalid request data.")

@@ -19,6 +19,7 @@ type createVisitSUT struct {
 	rfidRepo    *usecase.MockRfidRepository
 	visitorRepo *usecase.MockVisitorRepository
 	visitRepo   *usecase.MockVisitRepository
+	eventRepo   *usecase.MockVisitEventRepository
 	gateRepo    *usecase.MockGateRepository
 	digester    *usecase.MockDigester
 	encryptor   *usecase.MockEncryptor
@@ -32,6 +33,7 @@ func newCreateVisitSUT(t *testing.T) *createVisitSUT {
 	rfidRepo := usecase.NewMockRfidRepository(t)
 	visitorRepo := usecase.NewMockVisitorRepository(t)
 	visitRepo := usecase.NewMockVisitRepository(t)
+	eventRepo := usecase.NewMockVisitEventRepository(t)
 	gateRepo := usecase.NewMockGateRepository(t)
 	digester := usecase.NewMockDigester(t)
 	encryptor := usecase.NewMockEncryptor(t)
@@ -41,12 +43,13 @@ func newCreateVisitSUT(t *testing.T) *createVisitSUT {
 		rfidRepo:    rfidRepo,
 		visitorRepo: visitorRepo,
 		visitRepo:   visitRepo,
+		eventRepo:   eventRepo,
 		gateRepo:    gateRepo,
 		digester:    digester,
 		encryptor:   encryptor,
 		clock:       clock,
 		tx:          tx,
-		uc:          usecase.NewCreateVisit(rfidRepo, visitorRepo, visitRepo, gateRepo, digester, encryptor, clock, tx),
+		uc:          usecase.NewCreateVisit(rfidRepo, visitorRepo, visitRepo, eventRepo, gateRepo, digester, encryptor, clock, tx),
 	}
 }
 
@@ -69,6 +72,7 @@ func validInput() usecase.CreateVisitInput {
 		VehiclePlateNumber: "BE 1199 AA",
 		PurposeOfVisit:     "Service AC Rumah",
 		DestinationName:    "AA-1",
+		StaffID:            uuid.New(),
 		GateID:             1,
 	}
 }
@@ -77,7 +81,6 @@ func TestCreateVisit_Success(t *testing.T) {
 	sut := newCreateVisitSUT(t)
 	in := validInput()
 	now := time.Date(2026, 5, 17, 12, 0, 0, 0, time.UTC)
-	createdAt := time.Date(2026, 5, 17, 12, 0, 1, 0, time.UTC)
 	visitorID := uuid.New()
 	visitID := uuid.New()
 
@@ -90,19 +93,22 @@ func TestCreateVisit_Success(t *testing.T) {
 	sut.visitorRepo.EXPECT().UpsertByIdentityHash(mock.Anything, "hashed-identity", in.Fullname).
 		Return(&entity.Visitor{ID: visitorID, Fullname: in.Fullname}, nil).Once()
 	sut.visitRepo.EXPECT().Create(mock.Anything, mock.MatchedBy(func(v *entity.Visit) bool {
-		gateID := in.GateID
 		return v.VisitorID == visitorID &&
 			string(v.IdentityPhoto) == "encrypted" &&
 			v.VehiclePlateNumber == in.VehiclePlateNumber &&
 			v.PurposeOfVisit == in.PurposeOfVisit &&
-			v.DestinationName == in.DestinationName &&
-			v.CurrentPosition == entity.CurrentPositionVilla1 &&
-			v.CheckinAt != nil && v.CheckinAt.Equal(now) &&
-			v.CheckinGateID != nil && *v.CheckinGateID == gateID
+			v.DestinationName == in.DestinationName
 	})).Run(func(_ context.Context, v *entity.Visit) {
 		v.ID = visitID
-		v.UpdatedAt = createdAt
 	}).Return(nil).Once()
+	sut.eventRepo.EXPECT().Append(mock.Anything, mock.MatchedBy(func(e *entity.VisitEvent) bool {
+		return e.VisitID == visitID &&
+			e.StaffID != nil && *e.StaffID == in.StaffID &&
+			e.GateID == in.GateID &&
+			e.Action == entity.VisitActionCheckin &&
+			e.CurrentPosition == entity.CurrentPositionVilla1 &&
+			e.CreatedAt.Equal(now)
+	})).Return(nil).Once()
 	sut.rfidRepo.EXPECT().AssociateVisit(mock.Anything, uint16(7), visitID).Return(nil).Once()
 	sut.visitorRepo.EXPECT().MarkBanned(mock.Anything, visitorID, "Checked in at gate 1", now).Return(nil).Once()
 	sut.gateRepo.EXPECT().AdjustQuota(mock.Anything, in.GateID, int16(-1)).Return(nil).Once()
@@ -113,7 +119,7 @@ func TestCreateVisit_Success(t *testing.T) {
 	require.NotNil(t, out)
 	assert.Equal(t, visitID.String(), out.VisitID)
 	assert.Equal(t, entity.CurrentPositionVilla1, out.CurrentArea)
-	assert.Equal(t, createdAt, out.UpdatedAt)
+	assert.Equal(t, now, out.UpdatedAt)
 }
 
 func TestCreateVisit_RfidNotFound(t *testing.T) {
@@ -187,6 +193,35 @@ func TestCreateVisit_TxRollsBackOnInnerError(t *testing.T) {
 	sut.visitorRepo.EXPECT().UpsertByIdentityHash(mock.Anything, "hashed", in.Fullname).
 		Return(&entity.Visitor{ID: visitorID}, nil).Once()
 	sut.visitRepo.EXPECT().Create(mock.Anything, mock.Anything).Return(dbErr).Once()
+
+	out, err := sut.uc.Execute(context.Background(), in)
+
+	assert.ErrorIs(t, err, dbErr)
+	assert.Nil(t, out)
+}
+
+// The CHECKIN event insert failing must roll back the whole checkin — a visit
+// row without its checkin event would derive no state.
+func TestCreateVisit_EventAppendErrorRollsBack(t *testing.T) {
+	sut := newCreateVisitSUT(t)
+	in := validInput()
+	now := time.Date(2026, 5, 17, 12, 0, 0, 0, time.UTC)
+	visitorID := uuid.New()
+	visitID := uuid.New()
+	dbErr := errors.New("event insert failed")
+
+	sut.rfidRepo.EXPECT().FindByUID(mock.Anything, in.UID).
+		Return(&entity.Rfid{ID: 7, RfidableType: entity.RfidableVisit}, nil).Once()
+	sut.encryptor.EXPECT().Encrypt(in.IdentityPhoto).Return([]byte("encrypted"), nil).Once()
+	sut.clock.EXPECT().Now().Return(now).Once()
+	sut.expectPassthroughTx()
+	sut.digester.EXPECT().SHA256Hex([]byte(in.IdentityNumber)).Return("hashed").Once()
+	sut.visitorRepo.EXPECT().UpsertByIdentityHash(mock.Anything, "hashed", in.Fullname).
+		Return(&entity.Visitor{ID: visitorID}, nil).Once()
+	sut.visitRepo.EXPECT().Create(mock.Anything, mock.Anything).
+		Run(func(_ context.Context, v *entity.Visit) { v.ID = visitID }).
+		Return(nil).Once()
+	sut.eventRepo.EXPECT().Append(mock.Anything, mock.Anything).Return(dbErr).Once()
 
 	out, err := sut.uc.Execute(context.Background(), in)
 

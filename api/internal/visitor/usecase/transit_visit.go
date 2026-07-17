@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +11,7 @@ import (
 
 type TransitVisitInput struct {
 	VisitID uuid.UUID
+	StaffID uuid.UUID
 	GateID  int16
 }
 
@@ -25,12 +25,12 @@ type TransitVisitUsecase interface {
 }
 
 type transitVisit struct {
-	visitRepo VisitRepository
+	eventRepo VisitEventRepository
 	clock     Clock
 }
 
-func NewTransitVisit(visitRepo VisitRepository, clock Clock) TransitVisitUsecase {
-	return &transitVisit{visitRepo: visitRepo, clock: clock}
+func NewTransitVisit(eventRepo VisitEventRepository, clock Clock) TransitVisitUsecase {
+	return &transitVisit{eventRepo: eventRepo, clock: clock}
 }
 
 func (u *transitVisit) Execute(ctx context.Context, in TransitVisitInput) (*TransitVisitOutput, error) {
@@ -39,21 +39,24 @@ func (u *transitVisit) Execute(ctx context.Context, in TransitVisitInput) (*Tran
 		return nil, entity.ErrInvalidVisitInput
 	}
 
-	visit, err := u.visitRepo.UpdateState(ctx, in.VisitID, position, nil, nil)
-	if errors.Is(err, entity.ErrVisitNotFound) {
-		// Visit rows arrive eventually (state also rides on the RFID card), so a
-		// missing row must not block the gate: report success with the position
-		// this update would have written. The transition itself is dropped.
-		return &TransitVisitOutput{
-			CurrentArea: position,
-			UpdatedAt:   u.clock.Now().UTC(),
-		}, nil
+	staffID := in.StaffID
+	event := &entity.VisitEvent{
+		VisitID:         in.VisitID,
+		StaffID:         &staffID,
+		GateID:          in.GateID,
+		Action:          entity.VisitActionTransit,
+		CurrentPosition: position,
+		CreatedAt:       u.clock.Now().UTC(),
 	}
-	if err != nil {
+	// Append never requires the visits row to exist (no FK on visit_id), so a
+	// DB that lags the RFID card can't block the gate: the event is recorded
+	// and the derived state materializes once the visit row arrives.
+	if err := u.eventRepo.Append(ctx, event); err != nil {
 		return nil, err
 	}
+
 	return &TransitVisitOutput{
-		CurrentArea: visit.CurrentPosition,
-		UpdatedAt:   visit.UpdatedAt,
+		CurrentArea: position,
+		UpdatedAt:   event.CreatedAt,
 	}, nil
 }

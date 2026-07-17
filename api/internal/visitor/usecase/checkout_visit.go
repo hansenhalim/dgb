@@ -11,6 +11,7 @@ import (
 
 type CheckoutVisitInput struct {
 	VisitID uuid.UUID
+	StaffID uuid.UUID
 	GateID  int16
 }
 
@@ -20,6 +21,7 @@ type CheckoutVisitUsecase interface {
 
 type checkoutVisit struct {
 	visitRepo   VisitRepository
+	eventRepo   VisitEventRepository
 	visitorRepo VisitorRepository
 	gateRepo    GateRepository
 	rfidRepo    RfidRepository
@@ -29,6 +31,7 @@ type checkoutVisit struct {
 
 func NewCheckoutVisit(
 	visitRepo VisitRepository,
+	eventRepo VisitEventRepository,
 	visitorRepo VisitorRepository,
 	gateRepo GateRepository,
 	rfidRepo RfidRepository,
@@ -37,6 +40,7 @@ func NewCheckoutVisit(
 ) CheckoutVisitUsecase {
 	return &checkoutVisit{
 		visitRepo:   visitRepo,
+		eventRepo:   eventRepo,
 		visitorRepo: visitorRepo,
 		gateRepo:    gateRepo,
 		rfidRepo:    rfidRepo,
@@ -51,14 +55,45 @@ func (u *checkoutVisit) Execute(ctx context.Context, in CheckoutVisitInput) erro
 		return entity.ErrInvalidVisitInput
 	}
 
-	now := u.clock.Now().UTC()
-	gateID := in.GateID
+	staffID := in.StaffID
+	event := &entity.VisitEvent{
+		VisitID:         in.VisitID,
+		StaffID:         &staffID,
+		GateID:          in.GateID,
+		Action:          entity.VisitActionCheckout,
+		CurrentPosition: position,
+		CreatedAt:       u.clock.Now().UTC(),
+	}
 
-	err := u.tx.Run(ctx, func(ctx context.Context) error {
-		visit, err := u.visitRepo.UpdateState(ctx, in.VisitID, position, new(now), &gateID)
+	return u.tx.Run(ctx, func(ctx context.Context) error {
+		visit, err := u.visitRepo.FindByID(ctx, in.VisitID)
+		if errors.Is(err, entity.ErrVisitNotFound) {
+			// Visit rows arrive eventually (state also rides on the RFID card),
+			// so a missing row must not block the gate. The tap is still logged;
+			// the side effects are skipped because they are all keyed to state
+			// this DB doesn't have yet (visitor ban, RFID binding, quota).
+			return u.eventRepo.Append(ctx, event)
+		}
 		if err != nil {
 			return err
 		}
+
+		latest, err := u.eventRepo.LatestByVisit(ctx, in.VisitID)
+		if err != nil {
+			return err
+		}
+		alreadyOut := latest != nil && latest.Action == entity.VisitActionCheckout
+
+		if err := u.eventRepo.Append(ctx, event); err != nil {
+			return err
+		}
+		if alreadyOut {
+			// Duplicate tap (retry, double scan): the event is recorded but the
+			// side effects already ran once — re-running would double-increment
+			// the gate quota.
+			return nil
+		}
+
 		if err := u.visitorRepo.ClearBan(ctx, visit.VisitorID); err != nil {
 			return err
 		}
@@ -67,12 +102,4 @@ func (u *checkoutVisit) Execute(ctx context.Context, in CheckoutVisitInput) erro
 		}
 		return u.gateRepo.AdjustQuota(ctx, in.GateID, 1)
 	})
-	if errors.Is(err, entity.ErrVisitNotFound) {
-		// Visit rows arrive eventually (state also rides on the RFID card), so a
-		// missing row must not block the gate. The tx has rolled back, so none of
-		// the side effects (ban clear, RFID release, quota bump) ran — they are
-		// all keyed to state this DB doesn't have yet.
-		return nil
-	}
-	return err
 }

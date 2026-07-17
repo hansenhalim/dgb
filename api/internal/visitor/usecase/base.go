@@ -52,13 +52,21 @@ type VisitRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*entity.Visit, error)
 	// Create inserts a new visit and populates v.ID, v.CreatedAt, v.UpdatedAt.
 	Create(ctx context.Context, v *entity.Visit) error
-	// UpdateState writes the new current_position (and, when non-nil, checkout
-	// columns) and returns the post-state row. Returns entity.ErrVisitNotFound
-	// when no row matches id.
-	UpdateState(ctx context.Context, id uuid.UUID, pos entity.CurrentPosition, checkoutAt *time.Time, checkoutGateID *int16) (*entity.Visit, error)
 	// ListByGate returns the 50 most recent visits touching the gate (either
 	// checkin_gate_id or checkout_gate_id matches), ordered by created_at DESC.
 	ListByGate(ctx context.Context, gateID int16) ([]entity.Visit, error)
+}
+
+// VisitEventRepository is the append-only gate-event log that visit state is
+// derived from (via the visit_states view). Events are never updated.
+type VisitEventRepository interface {
+	// Append inserts the event and populates e.ID. Must succeed even when no
+	// visits row matches e.VisitID — the RFID card is the source of truth and
+	// the DB may lag it.
+	Append(ctx context.Context, e *entity.VisitEvent) error
+	// LatestByVisit returns the visit's newest event, or nil, nil when the
+	// visit has none.
+	LatestByVisit(ctx context.Context, visitID uuid.UUID) (*entity.VisitEvent, error)
 }
 
 type VisitorRepository interface {

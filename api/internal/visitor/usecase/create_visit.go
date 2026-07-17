@@ -18,6 +18,7 @@ type CreateVisitInput struct {
 	VehiclePlateNumber string
 	PurposeOfVisit     string
 	DestinationName    string
+	StaffID            uuid.UUID
 	GateID             int16
 }
 
@@ -35,6 +36,7 @@ type createVisit struct {
 	rfidRepo    RfidRepository
 	visitorRepo VisitorRepository
 	visitRepo   VisitRepository
+	eventRepo   VisitEventRepository
 	gateRepo    GateRepository
 	digester    Digester
 	encryptor   Encryptor
@@ -46,6 +48,7 @@ func NewCreateVisit(
 	rfidRepo RfidRepository,
 	visitorRepo VisitorRepository,
 	visitRepo VisitRepository,
+	eventRepo VisitEventRepository,
 	gateRepo GateRepository,
 	digester Digester,
 	encryptor Encryptor,
@@ -56,6 +59,7 @@ func NewCreateVisit(
 		rfidRepo:    rfidRepo,
 		visitorRepo: visitorRepo,
 		visitRepo:   visitRepo,
+		eventRepo:   eventRepo,
 		gateRepo:    gateRepo,
 		digester:    digester,
 		encryptor:   encryptor,
@@ -84,7 +88,6 @@ func (u *createVisit) Execute(ctx context.Context, in CreateVisitInput) (*Create
 	}
 
 	now := u.clock.Now().UTC()
-	gateID := in.GateID
 
 	var (
 		visitID   uuid.UUID
@@ -105,11 +108,21 @@ func (u *createVisit) Execute(ctx context.Context, in CreateVisitInput) (*Create
 			VehiclePlateNumber: in.VehiclePlateNumber,
 			PurposeOfVisit:     in.PurposeOfVisit,
 			DestinationName:    in.DestinationName,
-			CurrentPosition:    position,
-			CheckinAt:          &now,
-			CheckinGateID:      &gateID,
 		}
 		if err := u.visitRepo.Create(ctx, visit); err != nil {
+			return err
+		}
+
+		staffID := in.StaffID
+		event := &entity.VisitEvent{
+			VisitID:         visit.ID,
+			StaffID:         &staffID,
+			GateID:          in.GateID,
+			Action:          entity.VisitActionCheckin,
+			CurrentPosition: position,
+			CreatedAt:       now,
+		}
+		if err := u.eventRepo.Append(ctx, event); err != nil {
 			return err
 		}
 
@@ -127,7 +140,7 @@ func (u *createVisit) Execute(ctx context.Context, in CreateVisitInput) (*Create
 		}
 
 		visitID = visit.ID
-		updatedAt = visit.UpdatedAt
+		updatedAt = event.CreatedAt
 		return nil
 	})
 	if err != nil {

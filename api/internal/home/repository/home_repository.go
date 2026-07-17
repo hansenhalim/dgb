@@ -51,7 +51,7 @@ func (r *HomeRepository) Snapshot(ctx context.Context, gateID int16, nowUTC time
 	}
 
 	if err := r.db.WithContext(ctx).
-		Table("visits").
+		Table("visit_states").
 		Where("checkin_gate_id = ? AND current_position <> ?", gateID, positionOutside).
 		Count(&out.ActiveVisits).Error; err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (r *HomeRepository) Snapshot(ctx context.Context, gateID int16, nowUTC time
 
 	startOfDay := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), 0, 0, 0, 0, time.UTC)
 	if err := r.db.WithContext(ctx).
-		Table("visits").
+		Table("visit_states").
 		Where("checkin_gate_id = ? AND checkin_at >= ?", gateID, startOfDay).
 		Count(&out.TodayVisits).Error; err != nil {
 		return nil, err
