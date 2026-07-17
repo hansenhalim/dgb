@@ -7,18 +7,17 @@ use App\Enum\Role;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property Role $role
  * @property string $name
  * @property string $secret_key
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Rfid|null $rfid
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PersonalAccessToken> $tokens
- * @property-read int|null $tokens_count
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Rfid|null $rfid
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Staff newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Staff newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Staff query()
@@ -28,11 +27,12 @@ use Laravel\Sanctum\HasApiTokens;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Staff whereRole($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Staff whereSecretKey($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Staff whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class Staff extends Authenticatable
 {
-    use HasApiTokens, HasUuids;
+    use HasUuids;
 
     protected $fillable = ['role', 'name', 'secret_key'];
 

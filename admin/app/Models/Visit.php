@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
@@ -18,19 +19,20 @@ use Illuminate\Support\Facades\Log;
  * @property string|null $vehicle_plate_number
  * @property string|null $purpose_of_visit
  * @property string|null $destination_name
- * @property \Illuminate\Support\Carbon|null $checkin_at
+ * @property Carbon|null $checkin_at
  * @property int|null $checkin_gate_id
- * @property \Illuminate\Support\Carbon|null $checkout_at
+ * @property Carbon|null $checkout_at
  * @property int|null $checkout_gate_id
  * @property CurrentPosition $current_position
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Gate|null $checkinGate
- * @property-read \App\Models\Gate|null $checkoutGate
- * @property-read \App\Models\Destination|null $destination
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Gate|null $checkinGate
+ * @property-read Gate|null $checkoutGate
+ * @property-read Destination|null $destination
  * @property-read mixed $duration
- * @property-read \App\Models\Rfid|null $rfid
- * @property-read \App\Models\Visitor|null $visitor
+ * @property-read Rfid|null $rfid
+ * @property-read Visitor|null $visitor
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Visit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Visit newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Visit query()
@@ -47,27 +49,23 @@ use Illuminate\Support\Facades\Log;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Visit whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Visit whereVehiclePlateNumber($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Visit whereVisitorId($value)
+ *
  * @mixin \Eloquent
  */
 class Visit extends Model
 {
     use HasUuids;
 
+    /**
+     * Read-only: backed by the visit_states view, which joins the visits base
+     * table with state derived from the append-only visit_events log
+     * (current_position, checkin/checkout stamps). All writes go through the
+     * Go API, which appends events; nothing should save() this model.
+     */
+    protected $table = 'visit_states';
+
     protected $hidden = [
         'identity_photo',
-    ];
-
-    protected $fillable = [
-        'visitor_id',
-        'identity_photo',
-        'vehicle_plate_number',
-        'purpose_of_visit',
-        'destination_name',
-        'checkin_at',
-        'checkin_gate_id',
-        'checkout_at',
-        'checkout_gate_id',
-        'current_position',
     ];
 
     protected function casts(): array
