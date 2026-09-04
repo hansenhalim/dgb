@@ -2,6 +2,8 @@
 
 namespace App\Enum;
 
+use Illuminate\Support\Collection;
+
 enum CurrentPosition: string
 {
     case OUTSIDE = 'OUT';
@@ -13,6 +15,18 @@ enum CurrentPosition: string
     public static function values(): array
     {
         return array_column(self::cases(), 'value');
+    }
+
+    /**
+     * Value => label map for select inputs and filters.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return Collection::make(self::cases())
+            ->mapWithKeys(fn (self $case): array => [$case->value => $case->label()])
+            ->all();
     }
 
     public static function getCheckinPosition(int $gateId): self
@@ -44,6 +58,32 @@ enum CurrentPosition: string
             2 => self::VILLA1,
             3 => self::VILLA2,
             4 => self::EXCLUSIVE,
+        };
+    }
+
+    /**
+     * Human label shown wherever a position is rendered: table badges, infolist
+     * badges, and the position filter. Single source of truth for all three.
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::OUTSIDE => 'Outside',
+            self::VILLA1 => 'Villa 1',
+            self::VILLA2 => 'Villa 2',
+            self::EXCLUSIVE => 'Exclusive',
+            self::TRANSIT => 'Transit',
+        };
+    }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::OUTSIDE => 'gray',
+            self::VILLA1 => 'success',
+            self::VILLA2 => 'info',
+            self::EXCLUSIVE => 'warning',
+            self::TRANSIT => 'danger',
         };
     }
 

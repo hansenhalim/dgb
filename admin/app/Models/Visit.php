@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Enum\CurrentPosition;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
@@ -32,6 +34,7 @@ use Illuminate\Support\Facades\Log;
  * @property-read mixed $duration
  * @property-read Rfid|null $rfid
  * @property-read Visitor|null $visitor
+ * @property-read Collection<int, VisitEvent> $visitEvents
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Visit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Visit newQuery()
@@ -100,6 +103,18 @@ class Visit extends Model
     public function rfid(): MorphOne
     {
         return $this->morphOne(Rfid::class, 'rfidable');
+    }
+
+    /**
+     * The append-only gate-transition log this visit's state is derived from.
+     *
+     * Ordered oldest-first by the uuidv7 primary key rather than created_at:
+     * created_at only has second precision, so two transitions in the same
+     * second would tie, while the key is time-sortable at insert order.
+     */
+    public function visitEvents(): HasMany
+    {
+        return $this->hasMany(VisitEvent::class)->orderBy('id');
     }
 
     protected function duration(): Attribute

@@ -34,20 +34,8 @@ class VisitsTable
                 TextColumn::make('current_position')
                     ->label('POSITION')
                     ->badge()
-                    ->color(fn (CurrentPosition $state): string => match ($state) {
-                        CurrentPosition::OUTSIDE => 'gray',
-                        CurrentPosition::VILLA1 => 'success',
-                        CurrentPosition::VILLA2 => 'info',
-                        CurrentPosition::EXCLUSIVE => 'warning',
-                        CurrentPosition::TRANSIT => 'danger',
-                    })
-                    ->formatStateUsing(fn (CurrentPosition $state): string => match ($state) {
-                        CurrentPosition::OUTSIDE => 'Outside',
-                        CurrentPosition::VILLA1 => 'Villa 1',
-                        CurrentPosition::VILLA2 => 'Villa 2',
-                        CurrentPosition::EXCLUSIVE => 'Exclusive',
-                        CurrentPosition::TRANSIT => 'Transit',
-                    }),
+                    ->color(fn (CurrentPosition $state): string => $state->color())
+                    ->formatStateUsing(fn (CurrentPosition $state): string => $state->label()),
                 TextColumn::make('checkin_at')
                     ->label('CHECK IN')
                     ->dateTime()
@@ -76,13 +64,7 @@ class VisitsTable
             ->filters([
                 SelectFilter::make('current_position')
                     ->label('Current Position')
-                    ->options([
-                        CurrentPosition::OUTSIDE->value => 'Outside',
-                        CurrentPosition::VILLA1->value => 'Villa 1',
-                        CurrentPosition::VILLA2->value => 'Villa 2',
-                        CurrentPosition::EXCLUSIVE->value => 'Exclusive Villa',
-                        CurrentPosition::TRANSIT->value => 'Transit',
-                    ]),
+                    ->options(CurrentPosition::options()),
 
                 SelectFilter::make('destination_name')
                     ->label('Destination')
