@@ -100,17 +100,9 @@ func (r *TransferRequestRepository) Confirm(ctx context.Context, id int64, recip
 			return entity.ErrTransferAlreadyResponded
 		}
 
-		if err := tx.Model(&gate{}).
-			Where("id = ?", row.FromGateID).
-			UpdateColumn("current_quota", gorm.Expr("current_quota - ?", row.Amount)).Error; err != nil {
-			return err
-		}
-		if err := tx.Model(&gate{}).
-			Where("id = ?", row.ToGateID).
-			UpdateColumn("current_quota", gorm.Expr("current_quota + ?", row.Amount)).Error; err != nil {
-			return err
-		}
-
+		// No gate writes: confirming a transfer moves stock by virtue of the
+		// row reaching CFRM, which gate_states sums into both gates' derived
+		// quota. The status flip is the whole effect.
 		return tx.Model(&row).Updates(map[string]any{
 			"status":             statusToDB(entity.TransferStatusConfirmed),
 			"recipient_staff_id": recipientStaffID,

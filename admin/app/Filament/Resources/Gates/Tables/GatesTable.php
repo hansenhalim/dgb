@@ -11,14 +11,23 @@ class GatesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('state'))
             ->columns([
                 TextColumn::make('id')
                     ->label('ID'),
                 TextColumn::make('name')
                     ->searchable(),
-                TextColumn::make('current_quota')
+                // The stored column is only the opening balance; live stock
+                // comes from the gate_states view via the state relation.
+                TextColumn::make('state.current_quota')
+                    ->label('Card stock')
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('current_quota')
+                    ->label('Opening balance')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

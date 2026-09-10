@@ -21,10 +21,12 @@ type transferRequest struct {
 
 func (transferRequest) TableName() string { return "transfer_requests" }
 
+// gate is read-only, backed by the gate_states view. See the gate repository
+// package for what the derived CurrentQuota means.
 type gate struct {
 	ID           int16  `gorm:"column:id;primaryKey"`
 	Name         string `gorm:"column:name"`
 	CurrentQuota int16  `gorm:"column:current_quota"`
 }
 
-func (gate) TableName() string { return "gates" }
+func (gate) TableName() string { return "gate_states" }

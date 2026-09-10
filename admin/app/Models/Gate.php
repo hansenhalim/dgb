@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $current_quota
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\GateState|null $state
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gate newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gate newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Gate query()
@@ -27,4 +28,16 @@ class Gate extends Model
         'name',
         'current_quota',
     ];
+
+    /**
+     * Live card stock, derived by the gate_states view. This admin is the only
+     * writer of gates.current_quota, which the view treats as an opening
+     * balance; every subsequent movement is replayed from visit_states and
+     * confirmed transfer_requests. Read stock through here, never off the
+     * base column.
+     */
+    public function state(): HasOne
+    {
+        return $this->hasOne(GateState::class, 'id', 'id');
+    }
 }

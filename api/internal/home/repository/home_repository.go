@@ -20,7 +20,7 @@ func NewHomeRepository(db *gorm.DB) *HomeRepository {
 // SnapshotCounts is the raw aggregate the home usecase shapes into the
 // dashboard response. Every numeric field is scoped to a single gate.
 type SnapshotCounts struct {
-	GateQuota                  int16 // this gate's gates.current_quota (0 if gate id unknown)
+	GateQuota                  int16 // this gate's derived card stock from gate_states (0 if gate id unknown)
 	ActiveVisits               int64 // visits checked in at this gate, still on-site (current_position <> OUT)
 	TodayVisits                int64 // visits checked in at this gate today (UTC)
 	HasIncomingTransferRequest bool  // a PENDING transfer with to_gate_id = this gate
@@ -43,7 +43,7 @@ func (r *HomeRepository) Snapshot(ctx context.Context, gateID int16, nowUTC time
 	var out SnapshotCounts
 
 	if err := r.db.WithContext(ctx).
-		Table("gates").
+		Table("gate_states").
 		Select("COALESCE(MAX(current_quota), 0)").
 		Where("id = ?", gateID).
 		Scan(&out.GateQuota).Error; err != nil {

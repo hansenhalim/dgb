@@ -23,7 +23,6 @@ type checkoutVisit struct {
 	visitRepo   VisitRepository
 	eventRepo   VisitEventRepository
 	visitorRepo VisitorRepository
-	gateRepo    GateRepository
 	rfidRepo    RfidRepository
 	clock       Clock
 	tx          TxRunner
@@ -33,7 +32,6 @@ func NewCheckoutVisit(
 	visitRepo VisitRepository,
 	eventRepo VisitEventRepository,
 	visitorRepo VisitorRepository,
-	gateRepo GateRepository,
 	rfidRepo RfidRepository,
 	clock Clock,
 	tx TxRunner,
@@ -42,7 +40,6 @@ func NewCheckoutVisit(
 		visitRepo:   visitRepo,
 		eventRepo:   eventRepo,
 		visitorRepo: visitorRepo,
-		gateRepo:    gateRepo,
 		rfidRepo:    rfidRepo,
 		clock:       clock,
 		tx:          tx,
@@ -71,7 +68,10 @@ func (u *checkoutVisit) Execute(ctx context.Context, in CheckoutVisitInput) erro
 			// Visit rows arrive eventually (state also rides on the RFID card),
 			// so a missing row must not block the gate. The tap is still logged;
 			// the side effects are skipped because they are all keyed to state
-			// this DB doesn't have yet (visitor ban, RFID binding, quota).
+			// this DB doesn't have yet (visitor ban, RFID binding). Gate stock
+			// needs no action here: it is derived from the event log, and
+			// gate_states counts only the first CHECKOUT per visit, so the
+			// repeated events this path can append still move stock once.
 			return u.eventRepo.Append(ctx, event)
 		}
 		if err != nil {
@@ -89,17 +89,15 @@ func (u *checkoutVisit) Execute(ctx context.Context, in CheckoutVisitInput) erro
 		}
 		if alreadyOut {
 			// Duplicate tap (retry, double scan): the event is recorded but the
-			// side effects already ran once — re-running would double-increment
-			// the gate quota.
+			// side effects already ran once, and neither clearing a ban nor
+			// releasing an RFID is safe to repeat. Gate stock is unaffected
+			// either way — gate_states counts first CHECKOUT per visit.
 			return nil
 		}
 
 		if err := u.visitorRepo.ClearBan(ctx, visit.VisitorID); err != nil {
 			return err
 		}
-		if err := u.rfidRepo.ReleaseByVisit(ctx, in.VisitID); err != nil {
-			return err
-		}
-		return u.gateRepo.AdjustQuota(ctx, in.GateID, 1)
+		return u.rfidRepo.ReleaseByVisit(ctx, in.VisitID)
 	})
 }

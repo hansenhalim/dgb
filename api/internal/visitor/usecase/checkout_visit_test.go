@@ -19,7 +19,6 @@ type checkoutVisitSUT struct {
 	visitRepo   *usecase.MockVisitRepository
 	eventRepo   *usecase.MockVisitEventRepository
 	visitorRepo *usecase.MockVisitorRepository
-	gateRepo    *usecase.MockGateRepository
 	rfidRepo    *usecase.MockRfidRepository
 	clock       *usecase.MockClock
 	tx          *usecase.MockTxRunner
@@ -31,7 +30,6 @@ func newCheckoutVisitSUT(t *testing.T) *checkoutVisitSUT {
 	visitRepo := usecase.NewMockVisitRepository(t)
 	eventRepo := usecase.NewMockVisitEventRepository(t)
 	visitorRepo := usecase.NewMockVisitorRepository(t)
-	gateRepo := usecase.NewMockGateRepository(t)
 	rfidRepo := usecase.NewMockRfidRepository(t)
 	clock := usecase.NewMockClock(t)
 	tx := usecase.NewMockTxRunner(t)
@@ -39,11 +37,10 @@ func newCheckoutVisitSUT(t *testing.T) *checkoutVisitSUT {
 		visitRepo:   visitRepo,
 		eventRepo:   eventRepo,
 		visitorRepo: visitorRepo,
-		gateRepo:    gateRepo,
 		rfidRepo:    rfidRepo,
 		clock:       clock,
 		tx:          tx,
-		uc:          usecase.NewCheckoutVisit(visitRepo, eventRepo, visitorRepo, gateRepo, rfidRepo, clock, tx),
+		uc:          usecase.NewCheckoutVisit(visitRepo, eventRepo, visitorRepo, rfidRepo, clock, tx),
 	}
 }
 
@@ -82,7 +79,6 @@ func TestCheckoutVisit_Success(t *testing.T) {
 	sut.eventRepo.EXPECT().Append(mock.Anything, matchCheckoutEvent(visitID, staffID, gateID, now)).Return(nil).Once()
 	sut.visitorRepo.EXPECT().ClearBan(mock.Anything, visitorID).Return(nil).Once()
 	sut.rfidRepo.EXPECT().ReleaseByVisit(mock.Anything, visitID).Return(nil).Once()
-	sut.gateRepo.EXPECT().AdjustQuota(mock.Anything, gateID, int16(1)).Return(nil).Once()
 
 	err := sut.uc.Execute(context.Background(), usecase.CheckoutVisitInput{VisitID: visitID, StaffID: staffID, GateID: gateID})
 
@@ -158,7 +154,6 @@ func TestCheckoutVisit_NoPriorEventsRunsSideEffects(t *testing.T) {
 	sut.eventRepo.EXPECT().Append(mock.Anything, mock.Anything).Return(nil).Once()
 	sut.visitorRepo.EXPECT().ClearBan(mock.Anything, visitorID).Return(nil).Once()
 	sut.rfidRepo.EXPECT().ReleaseByVisit(mock.Anything, visitID).Return(nil).Once()
-	sut.gateRepo.EXPECT().AdjustQuota(mock.Anything, int16(1), int16(1)).Return(nil).Once()
 
 	err := sut.uc.Execute(context.Background(), usecase.CheckoutVisitInput{VisitID: visitID, StaffID: staffID, GateID: 1})
 
