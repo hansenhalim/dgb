@@ -31,13 +31,13 @@ A guard uses the mobile app to scan or enroll an RFID card over BLE to a nearby 
 
 ## Packages
 
-| Dir              | What it is                                          | Stack                                         |
-| ---------------- | --------------------------------------------------- | --------------------------------------------- |
-| [api/](api/)     | System of record. REST API, JWT auth.               | Go 1.26, Echo v5, GORM, Postgres              |
-| [admin/](admin/) | Staff back-office. Reads/writes the API's database. | Laravel 13, Filament 4, PHP 8.2+, Tailwind v4 |
-| [app/](app/)     | Guard's mobile app. BLE to reader, HTTPS to API.    | Expo 55, React Native, TypeScript             |
-| [ocr/](ocr/)     | ID-document OCR microservice. Called by `api/`.     | FastAPI, RapidOCR (PP-OCRv5), ONNX Runtime    |
-| [rfid/](rfid/)   | RFID reader firmware. BLE + UART command API.       | ESP32-C3, PlatformIO, Arduino, PN532          |
+| Dir              | What it is                                                 | Stack                                                    |
+| ---------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
+| [api/](api/)     | System of record. REST API, JWT auth, owns the DB schema.  | Go 1.26, Echo v5, GORM, golang-migrate, Postgres         |
+| [admin/](admin/) | Staff back-office. Reads/writes the API's database.        | Laravel 13, Filament 4, PHP 8.4+, Tailwind v4            |
+| [app/](app/)     | Guard's mobile app. BLE to reader, HTTPS to API.           | Expo SDK 55, React Native 0.83, Expo Router, TypeScript  |
+| [ocr/](ocr/)     | ID-document OCR microservice. Called by `api/`.            | Python 3.12, FastAPI, RapidOCR (PP-OCRv5), OpenVINO      |
+| [rfid/](rfid/)   | RFID reader firmware. BLE + UART command API.              | ESP32-C3, PlatformIO, Arduino, PN532, NimBLE             |
 
 Setup and run instructions live in each package's own README.
 
@@ -52,4 +52,4 @@ Setup and run instructions live in each package's own README.
 
 - Each package is independent — no shared build tooling at the root.
 - Each package owns its own `.env`. There is no root-level config.
-- Postgres is shared between `api/` and `admin/`. **`admin/` owns the schema** (Laravel migrations are the source of truth); `api/` uses GORM at the query layer only.
+- Postgres is shared between `api/` and `admin/`. **`api/` owns the schema** (golang-migrate SQL in `api/db/migrations`, applied on startup); `admin/` has no migrations and only reads/writes through Eloquent.
